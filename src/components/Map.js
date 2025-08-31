@@ -1,6 +1,6 @@
 'use client'; // Mark this component as a Client Component
 
-import React, { useRef, useEffect, useState, useCallback } from 'react'; // Added useCallback
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'; // Added useCallback
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css'; // Import Mapbox CSS
 import * as turf from '@turf/turf'; // Import TurfJS
@@ -51,7 +51,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   const [totalAcres, setTotalAcres] = useState(0);
 
   // Define crop color mapping
-  const cropColorMapping = {
+  const cropColorMapping = useMemo(() => ({
       "Alfalfa & Alfalfa Mixtures": "#90EE90", "Almonds": "#8B4513", "Apples": "#FF0000",
       "Apricots": "#FFA500", "Avocados": "#556B2F", "Beans (Dry)": "#F5DEB3",
       "Bush Berries": "#BA55D3", "Carrots": "#FF8C00", "Cherries": "#DC143C",
@@ -71,7 +71,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       "Sunflowers": "#FFDB58", "Sweet Potatoes": "#D2B48C", "Tomatoes": "#FF6347",
       "Turf Farms": "#00FF7F", "Unclassified Fallow": "#696969", "Walnuts": "#A52A2A",
       "Wheat": "#F4A460", "Wild Rice": "#EEE8AA", "Young Perennials": "#C19A6B",
-  };
+  }), []);
 
   // Function to convert radius to meters based on the selected unit
   const convertToMeters = useCallback((value, unit) => {
@@ -130,8 +130,8 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       let bufferBbox;
       try {
         bufferBbox = turf.bbox(buffer);
-      } catch (bboxError) {
-        console.error("Error calculating buffer bounding box:", bboxError);
+      } catch {
+        console.error("Error calculating buffer bounding box:");
         return;
       }
       
@@ -191,7 +191,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             let featureBbox;
             try {
               featureBbox = turf.bbox(featureGeom);
-            } catch (bboxError) {
+            } catch {
               console.log(`Skipping feature with invalid bounding box`);
               return;
             }
@@ -593,7 +593,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     }, 50);
     
     console.log('Siting mode closed successfully');
-  }, []);
+  }, [cleanupSitingElements]);
 
   // Toggle siting analysis mode
   const toggleSitingMode = () => {
@@ -631,7 +631,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   };
   
   // Helper function to clean up all siting-related elements
-  const cleanupSitingElements = () => {
+  const cleanupSitingElements = useCallback(() => {
     console.log('cleanupSitingElements function called...');
     
     try {
@@ -750,12 +750,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       setTotalAcres(0);
       
       console.log('Siting elements cleanup completed');
-      
-      // Validate buffer state after cleanup
-      setTimeout(() => {
-        validateBufferState();
-      }, 100);
-      
+
     } catch (error) {
       console.error('Error during cleanupSitingElements:', error);
       // Force reset state even if cleanup fails
@@ -764,10 +759,10 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       setInventoryData([]);
       setTotalAcres(0);
     }
-  };
+  }, []);
 
   // Helper function to validate buffer state consistency
-  const validateBufferState = () => {
+  const validateBufferState = useCallback(() => {
     if (!map.current) return;
     
     const hasMarker = !!currentMarker.current;
@@ -785,7 +780,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       const lngLat = currentMarker.current.getLngLat();
       createBuffer(lngLat, radius, unit);
     }
-  };
+  }, [sitingMode, hasPlacedMarker, radius, unit, createBuffer, cleanupSitingElements]);
 
 
 
@@ -1359,7 +1354,7 @@ useEffect(() => {
     return () => {
       clearInterval(validationInterval);
     };
-  }, [mapLoaded, sitingMode, hasPlacedMarker, radius, unit]);
+  }, [mapLoaded, sitingMode, hasPlacedMarker, radius, unit, validateBufferState]);
 
   // Effect to clean up buffers when siting mode is disabled
   useEffect(() => {
@@ -1370,7 +1365,7 @@ useEffect(() => {
       console.log('Siting mode disabled - ensuring buffers are cleaned up...');
       cleanupSitingElements();
     }
-  }, [mapLoaded, sitingMode]);
+  }, [mapLoaded, sitingMode, cleanupSitingElements]);
 
 // Color mapping definition removed - will be handled in LayerControls
 

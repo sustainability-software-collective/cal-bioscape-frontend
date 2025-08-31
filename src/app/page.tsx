@@ -1,8 +1,9 @@
 'use client'; // Needed because LayerControls uses useState
 
 import { useState, useMemo, useCallback } from 'react'; // Added useCallback
+import dynamic from 'next/dynamic';
 // Removed useSWRInfinite import
-import Map from "@/components/Map"; // Import the Map component using alias
+const Map = dynamic(() => import('@/components/Map'), { ssr: false });
 import LayerControls from '@/components/LayerControls'; // Import the new LayerControls component
 import Header from '@/components/Header'; // Import the Header component
 
