@@ -1,11 +1,9 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA'
-      - '--build-arg=MAPBOX_ACCESS_TOKEN_BUILD=$$MAPBOX_ACCESS_TOKEN'
-      - '.'
+      - '-c'
+      - 'docker build -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$MAPBOX_ACCESS_TOKEN" .'
     secretEnv: ['MAPBOX_ACCESS_TOKEN']
 
   - name: 'gcr.io/cloud-builders/docker'
