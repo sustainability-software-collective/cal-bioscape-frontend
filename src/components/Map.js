@@ -7,6 +7,7 @@ import * as turf from '@turf/turf'; // Import TurfJS
 import SitingButton from './SitingButton';
 import SitingAnalysis from './SitingAnalysis';
 import SitingInventory from './SitingInventory'; // Import the new component
+import { FEEDSTOCK_TILESET_ID } from '@/lib/constants';
 
 // --- Configuration ---
 // IMPORTANT: Replace with your actual Mapbox access token if using the placeholder.
@@ -807,7 +808,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         // Add new vector source for Feedstock data
         map.current.addSource('feedstock-vector-source', {
           type: 'vector',
-          url: `mapbox://${process.env.NEXT_PUBLIC_MAPBOX_FEEDSTOCK_TILESET_ID}`
+          url: `mapbox://${FEEDSTOCK_TILESET_ID}`
         });
         console.log("Added feedstock vector source");
 
