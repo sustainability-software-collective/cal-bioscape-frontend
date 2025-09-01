@@ -313,6 +313,29 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         Anaerobic Digesters
                       </Label>
                     </div>
+                    
+                    {/* Biodiesel Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="biodieselPlantsLayer"
+                        checked={initialVisibility?.biodieselPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('biodieselPlants', !!checked)}
+                      />
+                      <Label htmlFor="biodieselPlantsLayer" className="flex items-center">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#228B22',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Biodiesel Plants
+                      </Label>
+                    </div>
                   </>
                 )}
               </div>
@@ -360,6 +383,51 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         Rail Lines
                       </Label>
                     </div>
+
+                    {/* Freight Terminals Layer Toggle - Under Transportation */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="freightTerminalsLayer"
+                        checked={initialVisibility?.freightTerminals ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('freightTerminals', !!checked)}
+                      />
+                      <Label htmlFor="freightTerminalsLayer" className="flex items-center">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#4169E1',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Freight Terminals
+                      </Label>
+                    </div>
+
+                    {/* Freight Routes Layer Toggle - Under Transportation */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="freightRoutesLayer"
+                        checked={initialVisibility?.freightRoutes ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('freightRoutes', !!checked)}
+                      />
+                      <Label htmlFor="freightRoutesLayer" className="flex items-center">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '16px',
+                            height: '3px',
+                            backgroundColor: '#9932CC',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Freight Routes
+                      </Label>
+                    </div>
                   </>
                 )}
               </div>
@@ -379,7 +447,9 @@ const LayerControls: React.FC<LayerControlsProps> = ({
             <div className="space-y-6">
               {/* Month Range Slider for Feedstock Availability */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Feedstock Availability</Label>
+                <div className="px-2">
+                  <Label className="text-sm font-medium">Feedstock Availability</Label>
+                </div>
                 <div className="px-2">
                   <Slider
                     min={0}
