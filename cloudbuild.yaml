@@ -3,7 +3,7 @@ steps:
     entrypoint: 'bash'
     args:
       - '-c'
-      - 'docker build -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$MAPBOX_ACCESS_TOKEN" .'
+      - 'set -euo pipefail; if [ -z "${MAPBOX_ACCESS_TOKEN:-}" ]; then echo "ERROR: MAPBOX_ACCESS_TOKEN is empty in build step" 1>&2; exit 1; else echo "Verified: MAPBOX_ACCESS_TOKEN is present in build step"; fi; docker build -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA --build-arg=MAPBOX_ACCESS_TOKEN_BUILD="${MAPBOX_ACCESS_TOKEN}" .'
     secretEnv: ['MAPBOX_ACCESS_TOKEN']
 
   - name: 'gcr.io/cloud-builders/docker'
