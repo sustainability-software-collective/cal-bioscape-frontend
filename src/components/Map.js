@@ -17,7 +17,7 @@ const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || 'YOUR
 
 if (!MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN') {
   console.warn(
-    'Mapbox Access Token is not set or using placeholder. Please set NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN in your environment variables (.env.local) for the map to function correctly.'
+    'Mapbox Access Token is not set. Please ensure NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is provided during build.'
   );
   // Consider adding a user-facing message here if the token is missing in production
 }
