@@ -764,26 +764,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     }
   }, []);
 
-  // Helper function to validate buffer state consistency
-  const validateBufferState = useCallback(() => {
-    if (!map.current) return;
-    
-    const hasMarker = !!currentMarker.current;
-    const hasBufferData = currentBuffer.current && currentBuffer.current.features && currentBuffer.current.features.length > 0;
-    
-    // If we have no marker but have buffer data, clean up the buffer
-    if (!hasMarker && hasBufferData) {
-      console.log('Buffer state inconsistency detected - cleaning up buffer without marker');
-      cleanupSitingElements();
-    }
-    
-    // If we have a marker but no buffer data, and we're in siting mode, recreate the buffer
-    if (hasMarker && !hasBufferData && sitingMode && hasPlacedMarker) {
-      console.log('Buffer state inconsistency detected - recreating buffer for existing marker');
-      const lngLat = currentMarker.current.getLngLat();
-      createBuffer(lngLat, radius, unit);
-    }
-  }, [sitingMode, hasPlacedMarker, radius, unit, createBuffer, cleanupSitingElements]);
+
 
 
 
@@ -1345,11 +1326,46 @@ useEffect(() => {
 
   }, [mapLoaded, layerVisibility?.biodieselPlants]); // Depend on mapLoaded and the specific layerVisibility property
 
-  // Effect for periodic buffer state validation
+  // Define validateBufferState function before it's used in dependency arrays
+  const validateBufferState = useCallback(() => {
+    if (!mapLoaded || !map.current) return;
+    
+    const hasMarker = !!currentMarker.current;
+    const hasBufferData = !!(currentBuffer.current && currentBuffer.current.geometry && currentBuffer.current.geometry.coordinates);
+    
+    // If we have no marker but have buffer data, clean up the buffer
+    if (!hasMarker && hasBufferData) {
+      console.log('Buffer state inconsistency detected - cleaning up buffer without marker');
+      cleanupSitingElements();
+      return;
+    }
+    
+    // If we have a marker but no buffer data, and we're in siting mode, recreate the buffer
+    if (hasMarker && !hasBufferData && sitingMode && hasPlacedMarker) {
+      console.log('Buffer state inconsistency detected - recreating buffer for existing marker');
+      const lngLat = currentMarker.current.getLngLat();
+      createBuffer(lngLat, radius, unit);
+    }
+    
+    // If we have both marker and buffer, ensure buffer layers are visible
+    if (hasMarker && hasBufferData && sitingMode) {
+      // Ensure buffer layers are visible
+      try {
+        if (map.current.getLayer('siting-buffer-fill') && map.current.getLayer('siting-buffer-outline')) {
+          map.current.setLayoutProperty('siting-buffer-fill', 'visibility', 'visible');
+          map.current.setLayoutProperty('siting-buffer-outline', 'visibility', 'visible');
+        }
+      } catch (e) {
+        console.warn('Failed to ensure buffer visibility:', e);
+      }
+    }
+  }, [mapLoaded, sitingMode, hasPlacedMarker, radius, unit, createBuffer, cleanupSitingElements]);
+
+// Effect for periodic buffer state validation
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
-    // Validate buffer state every 2 seconds to catch inconsistencies
+          // Validate buffer state every 2 seconds to catch inconsistencies
     const validationInterval = setInterval(() => {
       validateBufferState();
     }, 2000);
