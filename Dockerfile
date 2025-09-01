@@ -15,9 +15,22 @@ COPY . .
 
 # Expose Mapbox token to Next.js at build and runtime
 ARG MAPBOX_ACCESS_TOKEN_BUILD
-RUN if [ -z "$MAPBOX_ACCESS_TOKEN_BUILD" ]; then echo "ERROR: MAPBOX_ACCESS_TOKEN_BUILD is empty (secret not passed to build)" 1>&2; exit 1; else echo "Verified: MAPBOX_ACCESS_TOKEN_BUILD is present"; fi
+RUN echo "ARG check: length=${#MAPBOX_ACCESS_TOKEN_BUILD}, is empty: $([[ -z "$MAPBOX_ACCESS_TOKEN_BUILD" ]] && echo true || echo false), starts with space: $([[ "$MAPBOX_ACCESS_TOKEN_BUILD" =~ ^[[:space:]] ]] && echo true || echo false)" && \
+    if [ -z "$MAPBOX_ACCESS_TOKEN_BUILD" ]; then \
+      echo "ERROR: MAPBOX_ACCESS_TOKEN_BUILD is empty (secret not passed to build)" 1>&2; \
+      exit 1; \
+    else \
+      echo "Verified: MAPBOX_ACCESS_TOKEN_BUILD is present (${#MAPBOX_ACCESS_TOKEN_BUILD} characters)"; \
+    fi
+
 ENV NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN_BUILD
-RUN if [ -z "$NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN" ]; then echo "ERROR: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is empty after ENV" 1>&2; exit 1; else echo "Verified: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is set for build"; fi
+RUN echo "ENV check: length=${#NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}, is empty: $([[ -z "$NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN" ]] && echo true || echo false)" && \
+    if [ -z "$NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN" ]; then \
+      echo "ERROR: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is empty after ENV" 1>&2; \
+      exit 1; \
+    else \
+      echo "Verified: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is set for build (${#NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} characters)"; \
+    fi
 
 # Build the Next.js application
 # This command might vary slightly depending on your exact setup/needs
