@@ -1,60 +1,23 @@
 steps:
-  # 1. Debug step to verify secret existence and access
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "=== DEBUG SECRET ACCESS ==="
-        # Use quotes to prevent Cloud Build substitution confusion
-        if [ -z "$${MAPBOX_ACCESS_TOKEN:-}" ]; then 
-          echo "ERROR: Secret not found in environment"
-          echo "The Secret Manager secret 'mapbox-access-token' is not available to Cloud Build"
-          echo "Please check that:"
-          echo "1. The secret exists in your project"
-          echo "2. Cloud Build service account has Secret Manager Secret Accessor role"
-          exit 1
-        else 
-          TOKEN_LENGTH=$$(echo -n "$${MAPBOX_ACCESS_TOKEN}" | wc -c)
-          echo "SUCCESS: Secret is available ($${TOKEN_LENGTH} characters)"
-        fi
-    secretEnv: ['MAPBOX_ACCESS_TOKEN']
-
-  # 2. Try with a fixed test value (no secret needed)
+  # Build with access token
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        echo "=== TESTING WITH FIXED VALUE ==="
-        echo "This will verify if Docker build can receive arguments properly"
-        docker build --no-cache -t test-only \
-          --build-arg MAPBOX_ACCESS_TOKEN_BUILD="TEST_VALUE_NOT_REAL" \
-          -f Dockerfile.test .
-
-  # 3. Only if both tests pass, try the real build
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        set -e
-        echo "=== BUILDING WITH REAL SECRET ==="
-        TOKEN_LENGTH=$$(echo -n "$${MAPBOX_ACCESS_TOKEN:-}" | wc -c)
-        echo "Secret length: $${TOKEN_LENGTH} characters"
-        # Write to temp file to avoid shell interpretation issues
         echo -n "$${MAPBOX_ACCESS_TOKEN}" > /workspace/_token
         docker build -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA \
           --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$(cat /workspace/_token)" .
         rm -f /workspace/_token
     secretEnv: ['MAPBOX_ACCESS_TOKEN']
 
-  # Push and deploy only if everything works
+  # Push to registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA'
 
+  # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -72,7 +35,7 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA'
 
-# Add logging configuration for custom service account
+# Required for custom service account
 options:
   logging: CLOUD_LOGGING_ONLY
 

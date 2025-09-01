@@ -574,6 +574,8 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     };
   }, [mapLoaded, sitingMode, hasPlacedMarker, handleMapClick]);
 
+
+
   // Function to close siting mode and clean up everything
   const closeSitingMode = useCallback(() => {
     console.log('closeSitingMode function called - starting cleanup...');
