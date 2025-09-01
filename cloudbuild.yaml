@@ -6,7 +6,8 @@ steps:
       - '-c'
       - |
         echo "=== DEBUG SECRET ACCESS ==="
-        if [ -z "${MAPBOX_ACCESS_TOKEN:-}" ]; then 
+        # Use quotes to prevent Cloud Build substitution confusion
+        if [ -z "$${MAPBOX_ACCESS_TOKEN:-}" ]; then 
           echo "ERROR: Secret not found in environment"
           echo "The Secret Manager secret 'mapbox-access-token' is not available to Cloud Build"
           echo "Please check that:"
@@ -14,7 +15,8 @@ steps:
           echo "2. Cloud Build service account has Secret Manager Secret Accessor role"
           exit 1
         else 
-          echo "SUCCESS: Secret is available (${#MAPBOX_ACCESS_TOKEN} characters)"
+          TOKEN_LENGTH=$$(echo -n "$${MAPBOX_ACCESS_TOKEN}" | wc -c)
+          echo "SUCCESS: Secret is available ($${TOKEN_LENGTH} characters)"
         fi
     secretEnv: ['MAPBOX_ACCESS_TOKEN']
 
@@ -38,9 +40,10 @@ steps:
       - |
         set -e
         echo "=== BUILDING WITH REAL SECRET ==="
-        echo "Secret length: ${#MAPBOX_ACCESS_TOKEN:-0} characters"
-        # Write to temp file to avoid shell issues
-        echo -n "$MAPBOX_ACCESS_TOKEN" > /workspace/_token
+        TOKEN_LENGTH=$$(echo -n "$${MAPBOX_ACCESS_TOKEN:-}" | wc -c)
+        echo "Secret length: $${TOKEN_LENGTH} characters"
+        # Write to temp file to avoid shell interpretation issues
+        echo -n "$${MAPBOX_ACCESS_TOKEN}" > /workspace/_token
         docker build -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA \
           --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$(cat /workspace/_token)" .
         rm -f /workspace/_token
