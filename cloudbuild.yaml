@@ -69,6 +69,10 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA'
 
+# Add logging configuration for custom service account
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/mapbox-access-token/versions/latest
