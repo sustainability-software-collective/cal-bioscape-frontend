@@ -15,7 +15,9 @@ COPY . .
 
 # Expose Mapbox token to Next.js at build and runtime
 ARG MAPBOX_ACCESS_TOKEN_BUILD
+RUN if [ -z "$MAPBOX_ACCESS_TOKEN_BUILD" ]; then echo "ERROR: MAPBOX_ACCESS_TOKEN_BUILD is empty (secret not passed to build)" 1>&2; exit 1; else echo "Verified: MAPBOX_ACCESS_TOKEN_BUILD is present"; fi
 ENV NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN_BUILD
+RUN if [ -z "$NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN" ]; then echo "ERROR: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is empty after ENV" 1>&2; exit 1; else echo "Verified: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is set for build"; fi
 
 # Build the Next.js application
 # This command might vary slightly depending on your exact setup/needs
