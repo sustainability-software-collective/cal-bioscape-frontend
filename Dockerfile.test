@@ -1,0 +1,13 @@
+FROM alpine:latest
+
+# Just check if we can receive build args
+ARG MAPBOX_ACCESS_TOKEN_BUILD
+RUN echo "TEST BUILD: ARG value length=${#MAPBOX_ACCESS_TOKEN_BUILD}" && \
+    if [ -z "$MAPBOX_ACCESS_TOKEN_BUILD" ]; then \
+      echo "ERROR: TEST FAILURE - ARG is empty" && exit 1; \
+    else \
+      echo "SUCCESS: TEST PASSED - ARG received with ${#MAPBOX_ACCESS_TOKEN_BUILD} characters"; \
+    fi
+
+# Add a no-op CMD
+CMD ["echo", "This is a test image only"]
