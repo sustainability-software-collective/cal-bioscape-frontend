@@ -32,6 +32,137 @@ if (MAPBOX_ACCESS_TOKEN && MAPBOX_ACCESS_TOKEN !== 'YOUR_MAPBOX_ACCESS_TOKEN') {
 
 // Accept props for data and visibility
 const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added visibleCrops & croplandOpacity props
+  
+  // Define cleanupSitingElements at the very beginning to avoid temporal dead zone issues
+  const cleanupSitingElements = useCallback(() => {
+    console.log('cleanupSitingElements function called...');
+    
+    try {
+      // Clean up existing marker
+      if (currentMarker?.current) {
+        console.log('Removing current marker...');
+        try {
+          currentMarker.current.remove();
+        } catch (markerError) {
+          console.warn('Error removing marker:', markerError);
+        }
+        currentMarker.current = null;
+      } else {
+        console.log('No marker to clean up');
+      }
+      
+      // Clean up buffer layers and source
+      if (map?.current) {
+        try {
+          const source = map.current.getSource('siting-buffer-source');
+          if (source && source.setData) {
+            try {
+              console.log('Clearing siting-buffer-source data...');
+              source.setData({ type: 'FeatureCollection', features: [] });
+            } catch (e) {
+              console.warn('Failed to clear siting-buffer-source data', e);
+            }
+          } else {
+            console.log('No siting-buffer-source to clean up');
+          }
+          
+          // Hide buffer layers
+          if (map.current.getLayer('siting-buffer-fill')) {
+            console.log('Hiding siting-buffer-fill layer...');
+            try {
+              map.current.setLayoutProperty('siting-buffer-fill', 'visibility', 'none');
+            } catch (e) {
+              console.warn('Failed to hide siting-buffer-fill layer:', e);
+            }
+          } else {
+            console.log('No siting-buffer-fill layer to hide');
+          }
+          if (map.current.getLayer('siting-buffer-outline')) {
+            console.log('Hiding siting-buffer-outline layer...');
+            try {
+              map.current.setLayoutProperty('siting-buffer-outline', 'visibility', 'none');
+            } catch (e) {
+              console.warn('Failed to hide siting-buffer-outline layer:', e);
+            }
+          } else {
+            console.log('No siting-buffer-outline layer to hide');
+          }
+
+          // Also remove any legacy buffer layers/sources if they exist
+          if (map.current.getLayer('buffer-fill')) {
+            console.log('Removing legacy buffer-fill layer...');
+            try {
+              map.current.removeLayer('buffer-fill');
+            } catch (e) {
+              console.warn('Failed to remove legacy buffer-fill layer:', e);
+            }
+          }
+          if (map.current.getLayer('buffer-outline')) {
+            console.log('Removing legacy buffer-outline layer...');
+            try {
+              map.current.removeLayer('buffer-outline');
+            } catch (e) {
+              console.warn('Failed to remove legacy buffer-outline layer:', e);
+            }
+          }
+          if (map.current.getSource('buffer')) {
+            try { 
+              console.log('Removing legacy buffer source...');
+              map.current.removeSource('buffer'); 
+            } catch (e) {
+              console.warn('Failed to remove legacy buffer source:', e);
+            }
+          }
+          
+          // Additional cleanup: ensure all buffer-related layers are hidden
+          const allLayers = map.current.getStyle()?.layers || [];
+          let bufferLayersFound = 0;
+          allLayers.forEach(layer => {
+            if (layer.id && (layer.id.includes('buffer') || layer.id.includes('siting'))) {
+              if (map.current.getLayer(layer.id)) {
+                try {
+                  console.log(`Hiding buffer-related layer: ${layer.id}`);
+                  map.current.setLayoutProperty(layer.id, 'visibility', 'none');
+                  bufferLayersFound++;
+                } catch (e) {
+                  console.warn(`Failed to hide layer ${layer.id}:`, e);
+                }
+              }
+            }
+          });
+          console.log(`Found and hid ${bufferLayersFound} buffer-related layers`);
+        } catch (mapError) {
+          console.warn('Error during map cleanup:', mapError);
+        }
+      } else {
+        console.log('Map not available for cleanup');
+      }
+      
+      // Clear buffer reference
+      if (currentBuffer?.current) {
+        console.log('Clearing buffer reference');
+        currentBuffer.current = null;
+      } else {
+        console.log('No buffer reference to clear');
+      }
+      
+      // Reset all siting-related state
+      setHasPlacedMarker(false);
+      setShowInventoryPanel(false);
+      setInventoryData([]);
+      setTotalAcres(0);
+      
+      console.log('Siting elements cleanup completed');
+
+    } catch (error) {
+      console.error('Error during cleanupSitingElements:', error);
+      // Force reset state even if cleanup fails
+      setHasPlacedMarker(false);
+      setShowInventoryPanel(false);
+      setInventoryData([]);
+      setTotalAcres(0);
+    }
+  }, []);
   const mapContainer = useRef(null); // Reference to the map container div
   const map = useRef(null); // Reference to the map instance
   const [mapLoaded, setMapLoaded] = useState(false); // State to track map load status
@@ -576,6 +707,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
 
 
 
+
   // Function to close siting mode and clean up everything
   const closeSitingMode = useCallback(() => {
     console.log('closeSitingMode function called - starting cleanup...');
@@ -632,137 +764,6 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     // Enable siting mode (placement substate)
     setSitingMode(true);
   };
-  
-  // Helper function to clean up all siting-related elements
-  const cleanupSitingElements = useCallback(() => {
-    console.log('cleanupSitingElements function called...');
-    
-    try {
-      // Clean up existing marker
-      if (currentMarker.current) {
-        console.log('Removing current marker...');
-        try {
-          currentMarker.current.remove();
-        } catch (markerError) {
-          console.warn('Error removing marker:', markerError);
-        }
-        currentMarker.current = null;
-      } else {
-        console.log('No marker to clean up');
-      }
-      
-      // Clean up buffer layers and source
-      if (map.current) {
-        try {
-          const source = map.current.getSource('siting-buffer-source');
-          if (source && source.setData) {
-            try {
-              console.log('Clearing siting-buffer-source data...');
-              source.setData({ type: 'FeatureCollection', features: [] });
-            } catch (e) {
-              console.warn('Failed to clear siting-buffer-source data', e);
-            }
-          } else {
-            console.log('No siting-buffer-source to clean up');
-          }
-          
-          // Hide buffer layers
-          if (map.current.getLayer('siting-buffer-fill')) {
-            console.log('Hiding siting-buffer-fill layer...');
-            try {
-              map.current.setLayoutProperty('siting-buffer-fill', 'visibility', 'none');
-            } catch (e) {
-              console.warn('Failed to hide siting-buffer-fill layer:', e);
-            }
-          } else {
-            console.log('No siting-buffer-fill layer to hide');
-          }
-          if (map.current.getLayer('siting-buffer-outline')) {
-            console.log('Hiding siting-buffer-outline layer...');
-            try {
-              map.current.setLayoutProperty('siting-buffer-outline', 'visibility', 'none');
-            } catch (e) {
-              console.warn('Failed to hide siting-buffer-outline layer:', e);
-            }
-          } else {
-            console.log('No siting-buffer-outline layer to hide');
-          }
-
-          // Also remove any legacy buffer layers/sources if they exist
-          if (map.current.getLayer('buffer-fill')) {
-            console.log('Removing legacy buffer-fill layer...');
-            try {
-              map.current.removeLayer('buffer-fill');
-            } catch (e) {
-              console.warn('Failed to remove legacy buffer-fill layer:', e);
-            }
-          }
-          if (map.current.getLayer('buffer-outline')) {
-            console.log('Removing legacy buffer-outline layer...');
-            try {
-              map.current.removeLayer('buffer-outline');
-            } catch (e) {
-              console.warn('Failed to remove legacy buffer-outline layer:', e);
-            }
-          }
-          if (map.current.getSource('buffer')) {
-            try { 
-              console.log('Removing legacy buffer source...');
-              map.current.removeSource('buffer'); 
-            } catch (e) {
-              console.warn('Failed to remove legacy buffer source:', e);
-            }
-          }
-          
-          // Additional cleanup: ensure all buffer-related layers are hidden
-          const allLayers = map.current.getStyle().layers || [];
-          let bufferLayersFound = 0;
-          allLayers.forEach(layer => {
-            if (layer.id && (layer.id.includes('buffer') || layer.id.includes('siting'))) {
-              if (map.current.getLayer(layer.id)) {
-                try {
-                  console.log(`Hiding buffer-related layer: ${layer.id}`);
-                  map.current.setLayoutProperty(layer.id, 'visibility', 'none');
-                  bufferLayersFound++;
-                } catch (e) {
-                  console.warn(`Failed to hide layer ${layer.id}:`, e);
-                }
-              }
-            }
-          });
-          console.log(`Found and hid ${bufferLayersFound} buffer-related layers`);
-        } catch (mapError) {
-          console.warn('Error during map cleanup:', mapError);
-        }
-      } else {
-        console.log('Map not available for cleanup');
-      }
-      
-      // Clear buffer reference
-      if (currentBuffer.current) {
-        console.log('Clearing buffer reference');
-        currentBuffer.current = null;
-      } else {
-        console.log('No buffer reference to clear');
-      }
-      
-      // Reset all siting-related state
-      setHasPlacedMarker(false);
-      setShowInventoryPanel(false);
-      setInventoryData([]);
-      setTotalAcres(0);
-      
-      console.log('Siting elements cleanup completed');
-
-    } catch (error) {
-      console.error('Error during cleanupSitingElements:', error);
-      // Force reset state even if cleanup fails
-      setHasPlacedMarker(false);
-      setShowInventoryPanel(false);
-      setInventoryData([]);
-      setTotalAcres(0);
-    }
-  }, []);
 
 
 

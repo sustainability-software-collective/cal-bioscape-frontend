@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { useState as useStateRange } from "react";
 import { Info, Layers, Filter, ChevronDown } from 'lucide-react';
 import {
  Tooltip,
@@ -90,7 +89,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   const [isTransportationCollapsed, setIsTransportationCollapsed] = useState(false);
   
   // Month range slider state
-  const [monthRange, setMonthRange] = useStateRange<[number, number]>([0, 11]); // January to December by default
+  const [monthRange, setMonthRange] = useState<[number, number]>([0, 11]); // January to December by default
   
   // Month names for the range slider
   const monthNames = [
