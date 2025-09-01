@@ -6,11 +6,15 @@ import dynamic from 'next/dynamic';
 const Map = dynamic(() => import('@/components/Map'), { ssr: false });
 import LayerControls from '@/components/LayerControls'; // Import the new LayerControls component
 import Header from '@/components/Header'; // Import the Header component
+import { ChevronLeft, ChevronRight, Layers, Filter } from 'lucide-react';
 
 // Removed fetcher function
 export default function Home() {
   // State for layer visibility
   const [layerVisibility, setLayerVisibility] = useState<{ [key: string]: boolean }>({ feedstock: true, transportation: false, railLines: false, anaerobicDigester: false, biodieselPlants: false, freightTerminals: false, freightRoutes: false }); // Added freightRoutes layer
+
+  // State for panel collapse
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Computed values for parent checkbox states based on child layer visibility
   const computedInfrastructureMaster = useMemo(() => {
@@ -100,23 +104,63 @@ export default function Home() {
       <Header />
       
       {/* Main Content */}
-      <main className="flex flex-1">
+      <main className="flex flex-1 relative">
         {/* Container for Layer Controls */}
-        {/* Increase sidebar width, e.g., w-80 or w-1/4 */}
-        <div className="w-80 p-4 bg-gray-100 overflow-y-auto"> {/* Increased width */}
-          <LayerControls
-            initialVisibility={layerVisibility}
-            onLayerToggle={handleLayerToggle}
-            onCropFilterChange={handleCropFilterChange} // Pass the handler
-            croplandOpacity={croplandOpacity} // Pass opacity state
-            setCroplandOpacity={setCroplandOpacity} // Pass opacity setter
-            onInfrastructureToggle={handleInfrastructureToggle} // Pass the new handler
-            infrastructureMaster={computedInfrastructureMaster} // Pass the computed infrastructure master state
-            onTransportationToggle={handleTransportationToggle} // Pass the new handler
-            transportationMaster={computedTransportationMaster} // Pass the computed transportation master state
-          />
-          {/* Removed feedstockLoading display */}
+        <div className={`${isPanelCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 ease-in-out overflow-hidden bg-gray-100`}>
+          <div className="p-4 h-full overflow-y-auto">
+            <LayerControls
+              initialVisibility={layerVisibility}
+              onLayerToggle={handleLayerToggle}
+              onCropFilterChange={handleCropFilterChange} // Pass the handler
+              croplandOpacity={croplandOpacity} // Pass opacity state
+              setCroplandOpacity={setCroplandOpacity} // Pass opacity setter
+              onInfrastructureToggle={handleInfrastructureToggle} // Pass the new handler
+              infrastructureMaster={computedInfrastructureMaster} // Pass the computed infrastructure master state
+              onTransportationToggle={handleTransportationToggle} // Pass the new handler
+              transportationMaster={computedTransportationMaster} // Pass the computed transportation master state
+            />
+            {/* Removed feedstockLoading display */}
+          </div>
         </div>
+
+        {/* Thin Vertical Icon Bar - Only visible when collapsed */}
+        {isPanelCollapsed && (
+          <div className="w-12 bg-white border-r border-gray-200 flex flex-col items-center py-4 space-y-6">
+            {/* Data Layers Icon */}
+            <button
+              onClick={() => setIsPanelCollapsed(false)}
+              className="flex flex-col items-center space-y-1 p-2 rounded-md hover:bg-gray-200 transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 group"
+            >
+              <Layers className="h-5 w-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-200" />
+              <span className="text-xs text-gray-500 font-medium group-hover:text-gray-700 transition-colors duration-200">Layers</span>
+            </button>
+            
+            {/* Filters Icon */}
+            <button
+              onClick={() => setIsPanelCollapsed(false)}
+              className="flex flex-col items-center space-y-1 p-2 rounded-md hover:bg-gray-200 transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 group"
+            >
+              <Filter className="h-5 w-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-200" />
+              <span className="text-xs text-gray-500 font-medium group-hover:text-gray-700 transition-colors duration-200">Filters</span>
+            </button>
+          </div>
+        )}
+        
+        {/* Toggle Button */}
+        <button
+          onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+          className="absolute top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 ease-in-out"
+          style={{ 
+            left: isPanelCollapsed ? '8px' : '304px'
+          }}
+        >
+          {isPanelCollapsed ? (
+            <ChevronRight className="h-4 w-4 text-gray-600" />
+          ) : (
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
+          )}
+        </button>
+        
         {/* Container for the Map, taking remaining space and full height */}
         <div className="flex-grow h-full">
           {/* Pass fetched data and visibility state to the Map component */}

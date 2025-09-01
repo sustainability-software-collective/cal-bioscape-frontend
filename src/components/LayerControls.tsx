@@ -153,7 +153,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
           <AccordionTrigger className="[&[data-state=open]>svg]:rotate-0 [&[data-state=closed]>svg]:-rotate-90">
             <div className="flex items-center text-sm">
               <Layers className="h-5 w-5 mr-2" />
-              Data Layers
+              Layers
             </div>
           </AccordionTrigger>
           <AccordionContent>
