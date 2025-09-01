@@ -146,8 +146,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   const isCroplandVisible = initialVisibility?.feedstock ?? false;
 
   return (
-    <Card className="w-full">
-      <Accordion type="multiple" defaultValue={['layers', 'filters']} className="w-full p-4 -mt-10">
+    <Card className="w-full py-1">
+      <Accordion type="multiple" defaultValue={['layers', 'filters']} className="w-full px-4 py-0">
         {/* Layer Toggles Section */}
         <AccordionItem value="layers">
           <AccordionTrigger className="[&[data-state=open]>svg]:rotate-0 [&[data-state=closed]>svg]:-rotate-90">
