@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BioCirv Siting Tool",
+  title: "Cal BioScape",
   description: "Bio-circular economy siting and analysis tool for sustainable infrastructure planning",
 };
 

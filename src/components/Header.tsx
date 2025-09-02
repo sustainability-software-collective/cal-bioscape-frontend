@@ -9,7 +9,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 py-1">
+    <header className="bg-white shadow-sm border-b border-gray-200 py-2">
       <div className="flex items-center">
         <div className="w-70 pl-4 flex items-center justify-center">
           <button 
@@ -19,13 +19,13 @@ export default function Header() {
             <Image
               src="/cal-biomap-logo-no-text.png"
               alt="CAL BIOMAP Logo"
-              width={60}
-              height={60}
-              className="h-12 w-12"
+              width={52}
+              height={52}
+              className="h-11 w-11"
               priority
             />
             <span className="text-xl font-medium tracking-wider text-gray-800 uppercase" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontStretch: '104%' }}>
-              CAL BIOMAP
+              CAL BIOSCAPE
             </span>
           </button>
         </div>
