@@ -130,7 +130,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   const handleSelectAllCrops = () => {
     setCropVisibility(prev => {
       const newState = { ...prev };
-      filteredCropNames.forEach(name => newState[name] = true);
+      allCropNames.forEach(name => newState[name] = true);
       return newState;
     });
   };
@@ -138,7 +138,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   const handleDeselectAllCrops = () => {
      setCropVisibility(prev => {
         const newState = { ...prev };
-        filteredCropNames.forEach(name => newState[name] = false);
+        allCropNames.forEach(name => newState[name] = false);
         return newState;
      });
   };

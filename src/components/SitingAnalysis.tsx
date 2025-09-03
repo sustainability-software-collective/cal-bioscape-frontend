@@ -46,13 +46,21 @@ const SitingAnalysis: React.FC<SitingAnalysisProps> = ({
         </h3>
         <div className="flex items-center">
           <button 
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsCollapsed(!isCollapsed);
+            }}
             className="text-gray-500 hover:text-gray-700 transition-colors mr-1"
           >
             <ChevronDown className={`h-4 w-4 transform ${isCollapsed ? '-rotate-90' : ''}`} />
           </button>
           <button 
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             className="text-gray-500 hover:text-gray-700 transition-colors"
           >
             <X className="h-4 w-4" />
@@ -113,7 +121,11 @@ const SitingAnalysis: React.FC<SitingAnalysisProps> = ({
           {isActive && !hasPlacedMarker && (
             <div className="pt-1">
               <button 
-                onClick={onClose}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
                 className="w-full py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-medium border border-red-200 flex items-center justify-center"
               >
                 <XCircle className="h-3 w-3 mr-1" />
@@ -125,7 +137,11 @@ const SitingAnalysis: React.FC<SitingAnalysisProps> = ({
           {hasPlacedMarker && onRemoveSite && (
             <div className="pt-2">
               <button 
-                onClick={onRemoveSite}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemoveSite();
+                }}
                 className="w-full py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-medium border border-red-200 flex items-center justify-center"
               >
                 <Trash2 className="h-3 w-3 mr-1" />

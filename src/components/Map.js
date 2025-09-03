@@ -611,6 +611,12 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   const handleMapClick = useCallback((e) => {
     if (!sitingMode || hasPlacedMarker) return;
 
+    // Close any existing popup when in siting mode
+    if (currentPopup.current) {
+      currentPopup.current.remove();
+      currentPopup.current = null;
+    }
+
     const { lngLat } = e;
     
     // Validate coordinates
@@ -682,10 +688,16 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     
     // Define the click handler function
     const clickHandler = (e) => {
-      if (sitingMode && !hasPlacedMarker) {
+      // When in siting mode (both placement and review states)
+      // we want to prevent default map behavior
+      if (sitingMode) {
         // Stop event propagation to prevent other handlers from firing
         e.originalEvent.stopPropagation();
-        handleMapClick(e);
+        
+        // Only handle the click for marker placement if we're in placement mode
+        if (!hasPlacedMarker) {
+          handleMapClick(e);
+        }
       }
     };
     
@@ -712,22 +724,25 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   const closeSitingMode = useCallback(() => {
     console.log('closeSitingMode function called - starting cleanup...');
     
-    // First, reset the UI state
-    setSitingMode(false);
-    setShowSitingPanel(false);
-    setShowInventoryPanel(false);
-    
-    // Clear the data
-    setInventoryData([]);
-    setTotalAcres(0);
-    
-    // Then clean up the map elements
+    // Use setTimeout to prevent the map from refreshing
     setTimeout(() => {
-      console.log('Executing cleanupSitingElements...');
-      cleanupSitingElements();
-    }, 50);
-    
-    console.log('Siting mode closed successfully');
+      // First, reset the UI state
+      setSitingMode(false);
+      setShowSitingPanel(false);
+      setShowInventoryPanel(false);
+      
+      // Clear the data
+      setInventoryData([]);
+      setTotalAcres(0);
+      
+      // Then clean up the map elements
+      setTimeout(() => {
+        console.log('Executing cleanupSitingElements...');
+        cleanupSitingElements();
+      }, 50);
+      
+      console.log('Siting mode closed successfully');
+    }, 0);
   }, [cleanupSitingElements]);
 
   // Toggle siting analysis mode
@@ -745,12 +760,26 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       
       console.log('Siting mode exited successfully');
     } else {
-      // Enter siting placement substate
+      // Enter siting placement substate without refreshing the map
       console.log('Entering siting mode...');
-      setSitingMode(true);
-      setHasPlacedMarker(false);
+      
+      // Close any existing popups before entering siting mode
+      if (currentPopup.current) {
+        currentPopup.current.remove();
+        currentPopup.current = null;
+        console.log('Closed existing popup when entering siting mode');
+      }
+      
+      // Update state in a specific order to prevent map refresh
+      // First show panel, then set mode
       setShowSitingPanel(true);
-      console.log('Siting mode entered successfully');
+      setHasPlacedMarker(false);
+      
+      // Use requestAnimationFrame to delay setting siting mode until after render
+      requestAnimationFrame(() => {
+        setSitingMode(true);
+        console.log('Siting mode entered successfully');
+      });
     }
   };
   
@@ -758,11 +787,14 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   const removeSiteAndReactivate = () => {
     console.log('Removing current site and reactivating siting mode...');
     
-    // Use helper function to clean up all siting elements
+    // Clean up elements first
     cleanupSitingElements();
     
-    // Enable siting mode (placement substate)
-    setSitingMode(true);
+    // Use requestAnimationFrame to delay setting siting mode until after render
+    requestAnimationFrame(() => {
+      // Enable siting mode (placement substate)
+      setSitingMode(true);
+    });
   };
 
 
@@ -782,7 +814,9 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         style: 'mapbox://styles/mapbox/streets-v11', // Map style URL
         center: [-121.0, 37.5], // Initial center coordinates [lng, lat]
         zoom: 7, // Initial zoom level
-        accessToken: MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN' ? undefined : MAPBOX_ACCESS_TOKEN // Pass token only if valid
+        accessToken: MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN' ? undefined : MAPBOX_ACCESS_TOKEN, // Pass token only if valid
+        preserveDrawingBuffer: true, // Prevent refresh on state changes
+        renderWorldCopies: true // Improve performance
       });
 
       map.current.on('load', () => {
@@ -1066,8 +1100,12 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
 
         // --- Add Click Listener for Feedstock Layer (Display Properties) ---
         map.current.on('click', 'feedstock-vector-layer', (e) => {
-          // Don't show popup when in siting mode
-          if (sitingMode) return;
+          // Don't show popup when in siting mode (either in placement or review state)
+          if (sitingMode) {
+            // Stop event propagation to prevent popup
+            e.originalEvent.stopPropagation();
+            return;
+          }
           
           // Ensure features exist and prevent popups for clicks not directly on a feature
           if (e.features && e.features.length > 0) {
@@ -1168,7 +1206,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       // Clean up buffer reference
       currentBuffer.current = null;
     };
-  }, [layerVisibility, sitingMode]); // Add layerVisibility and sitingMode as dependencies
+  }, [layerVisibility]); // Remove sitingMode from dependencies to prevent map re-initialization
 
   // Effect to update the buffer when radius or unit changes
   useEffect(() => {

@@ -9,9 +9,16 @@ interface SitingButtonProps {
 }
 
 const SitingButton: React.FC<SitingButtonProps> = ({ onClick, isActive }) => {
+  // Prevent default behavior and stop propagation
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  };
+  
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={`
         absolute top-4 left-4 z-10 
         px-3 py-2 
