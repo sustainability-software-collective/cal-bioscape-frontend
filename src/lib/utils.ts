@@ -15,7 +15,7 @@ export function formatNumberWithCommas(num: number): string {
  * @param filename Name of the file to download
  * @param metadata Optional metadata to include at the top of the CSV
  */
-export function downloadCSV(data: Record<string, any>[], filename: string, metadata?: string[]): void {
+export function downloadCSV(data: Record<string, string | number | boolean | null | undefined>[], filename: string, metadata?: string[]): void {
   if (!data || !data.length) {
     console.warn('No data provided for CSV download');
     return;
