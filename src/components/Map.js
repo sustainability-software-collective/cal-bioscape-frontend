@@ -151,6 +151,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       setShowInventoryPanel(false);
       setInventoryData([]);
       setTotalAcres(0);
+      setMarkerLocation(null);
       
       console.log('Siting elements cleanup completed');
 
@@ -161,6 +162,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       setShowInventoryPanel(false);
       setInventoryData([]);
       setTotalAcres(0);
+      setMarkerLocation(null);
     }
   }, []);
   const mapContainer = useRef(null); // Reference to the map container div
@@ -176,11 +178,18 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   const [unit, setUnit] = useState('miles');
   const currentMarker = useRef(null);
   const currentBuffer = useRef(null);
+  const sitingModeRef = useRef(false);
+  
+  // Keep sitingModeRef in sync with sitingMode state
+  useEffect(() => {
+    sitingModeRef.current = sitingMode;
+  }, [sitingMode]);
   
   // Resource inventory state
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
   const [inventoryData, setInventoryData] = useState([]);
   const [totalAcres, setTotalAcres] = useState(0);
+  const [markerLocation, setMarkerLocation] = useState(null);
 
   // Define crop color mapping
   const cropColorMapping = useMemo(() => ({
@@ -659,6 +668,9 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
 
       currentMarker.current = marker;
 
+      // Store the marker location
+      setMarkerLocation(lngLat);
+
       // Create/update buffer around the marker
       createBuffer(lngLat, radius, unit);
 
@@ -734,6 +746,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       // Clear the data
       setInventoryData([]);
       setTotalAcres(0);
+      setMarkerLocation(null);
       
       // Then clean up the map elements
       setTimeout(() => {
@@ -1101,7 +1114,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         // --- Add Click Listener for Feedstock Layer (Display Properties) ---
         map.current.on('click', 'feedstock-vector-layer', (e) => {
           // Don't show popup when in siting mode (either in placement or review state)
-          if (sitingMode) {
+          if (sitingModeRef.current) {
             // Stop event propagation to prevent popup
             e.originalEvent.stopPropagation();
             return;
@@ -1461,6 +1474,7 @@ useEffect(() => {
         totalAcres={totalAcres}
         bufferRadius={radius}
         bufferUnit={unit}
+        location={markerLocation}
       />
     </div>
   );
