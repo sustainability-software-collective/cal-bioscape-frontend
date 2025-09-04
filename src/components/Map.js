@@ -2632,226 +2632,40 @@ useEffect(() => {
 
 }, [mapLoaded, croplandOpacity]); // Depend on mapLoaded and croplandOpacity
 
-// Effect for controlling rail lines layer visibility
+// Effect for controlling infrastructure and transportation layer visibility
 useEffect(() => {
-  if (!mapLoaded || !map.current || !map.current.getLayer('rail-lines-layer')) {
-    return; // Ensure map is loaded and layer exists
-  }
+  if (!mapLoaded || !map.current) return;
 
-  const isRailLinesVisible = layerVisibility?.railLines || false;
-  const visibility = isRailLinesVisible ? 'visible' : 'none';
-  console.log(`Setting rail lines layer visibility to: ${visibility}`);
-  map.current.setLayoutProperty('rail-lines-layer', 'visibility', visibility);
+  const layerMapping = {
+    'rail-lines-layer': layerVisibility?.railLines,
+    'freight-terminals-layer': layerVisibility?.freightTerminals,
+    'freight-routes-layer': layerVisibility?.freightRoutes,
+    'petroleum-pipelines-layer': layerVisibility?.petroleumPipelines,
+    'crude-oil-pipelines-layer': layerVisibility?.crudeOilPipelines,
+    'natural-gas-pipelines-layer': layerVisibility?.naturalGasPipelines,
+    'anaerobic-digester-layer': layerVisibility?.anaerobicDigester,
+    'biodiesel-plants-layer': layerVisibility?.biodieselPlants,
+    'biorefineries-layer': layerVisibility?.biorefineries,
+    'cement-plants-layer': layerVisibility?.cementPlants,
+    'mrf-layer': layerVisibility?.mrf,
+    'saf-plants-layer': layerVisibility?.safPlants,
+    'renewable-diesel-layer': layerVisibility?.renewableDiesel,
+    'landfill-lfg-layer': layerVisibility?.landfillLfg,
+    'wastewater-treatment-layer': layerVisibility?.wastewaterTreatment,
+    'waste-to-energy-layer': layerVisibility?.wasteToEnergy,
+    'combustion-plants-layer': layerVisibility?.combustionPlants,
+  };
 
-}, [mapLoaded, layerVisibility?.railLines]); // Depend on mapLoaded and the specific layerVisibility property
-
-// Effect for controlling freight terminals layer visibility
-useEffect(() => {
-  if (!mapLoaded || !map.current || !map.current.getLayer('freight-terminals-layer')) {
-    return; // Ensure map is loaded and layer exists
-  }
-
-  const isFreightTerminalsVisible = layerVisibility?.freightTerminals || false;
-  const visibility = isFreightTerminalsVisible ? 'visible' : 'none';
-  console.log(`Setting freight terminals layer visibility to: ${visibility}`);
-  map.current.setLayoutProperty('freight-terminals-layer', 'visibility', visibility);
-
-}, [mapLoaded, layerVisibility?.freightTerminals]); // Depend on mapLoaded and the specific layerVisibility property
-
-// Effect for controlling freight routes layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('freight-routes-layer')) {
-      return; // Ensure map is loaded and layer exists
+  Object.entries(layerMapping).forEach(([layerId, isVisible]) => {
+    if (map.current.getLayer(layerId)) {
+      const visibility = isVisible ? 'visible' : 'none';
+      if (map.current.getLayoutProperty(layerId, 'visibility') !== visibility) {
+        map.current.setLayoutProperty(layerId, 'visibility', visibility);
+      }
     }
-
-    const isFreightRoutesVisible = layerVisibility?.freightRoutes || false;
-    const visibility = isFreightRoutesVisible ? 'visible' : 'none';
-    console.log(`Setting freight routes layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('freight-routes-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.freightRoutes]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling petroleum pipelines layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('petroleum-pipelines-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isPetroleumPipelinesVisible = layerVisibility?.petroleumPipelines || false;
-    const visibility = isPetroleumPipelinesVisible ? 'visible' : 'none';
-    console.log(`Setting petroleum pipelines layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('petroleum-pipelines-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.petroleumPipelines]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling crude oil pipelines layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('crude-oil-pipelines-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isCrudeOilPipelinesVisible = layerVisibility?.crudeOilPipelines || false;
-    const visibility = isCrudeOilPipelinesVisible ? 'visible' : 'none';
-    console.log(`Setting crude oil pipelines layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('crude-oil-pipelines-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.crudeOilPipelines]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling natural gas pipelines layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('natural-gas-pipelines-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isNaturalGasPipelinesVisible = layerVisibility?.naturalGasPipelines || false;
-    const visibility = isNaturalGasPipelinesVisible ? 'visible' : 'none';
-    console.log(`Setting natural gas pipelines layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('natural-gas-pipelines-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.naturalGasPipelines]); // Depend on mapLoaded and the specific layerVisibility property
-
-// Effect for controlling anaerobic digester layer visibility
-useEffect(() => {
-  if (!mapLoaded || !map.current || !map.current.getLayer('anaerobic-digester-layer')) {
-    return; // Ensure map is loaded and layer exists
-  }
-
-  const isAnaerobicDigesterVisible = layerVisibility?.anaerobicDigester || false;
-  const visibility = isAnaerobicDigesterVisible ? 'visible' : 'none';
-  console.log(`Setting anaerobic digester layer visibility to: ${visibility}`);
-  map.current.setLayoutProperty('anaerobic-digester-layer', 'visibility', visibility);
-
-}, [mapLoaded, layerVisibility?.anaerobicDigester]); // Depend on mapLoaded and the specific layerVisibility property
-
-  // Effect for controlling biodiesel plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('biodiesel-plants-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isBiodieselPlantsVisible = layerVisibility?.biodieselPlants || false;
-    const visibility = isBiodieselPlantsVisible ? 'visible' : 'none';
-    console.log(`Setting biodiesel plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('biodiesel-plants-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.biodieselPlants]); // Depend on mapLoaded and the specific layerVisibility property
-
-  // Effect for controlling biorefineries layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('biorefineries-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isBiorefinariesVisible = layerVisibility?.biorefineries || false;
-    const visibility = isBiorefinariesVisible ? 'visible' : 'none';
-    console.log(`Setting biorefineries layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('biorefineries-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.biorefineries]); // Depend on mapLoaded and the specific layerVisibility property
-
-  // Effect for controlling Cement Plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('cement-plants-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isCementPlantsVisible = layerVisibility?.cementPlants || false;
-    const visibility = isCementPlantsVisible ? 'visible' : 'none';
-    console.log(`Setting Cement Plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('cement-plants-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.cementPlants]); // Depend on mapLoaded and the specific layerVisibility property
-
-  // Effect for controlling Material Recovery Facilities layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('mrf-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isMrfVisible = layerVisibility?.mrf || false;
-    const visibility = isMrfVisible ? 'visible' : 'none';
-    console.log(`Setting Material Recovery Facilities layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('mrf-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.mrf]); // Depend on mapLoaded and the specific layerVisibility property
-
-  // Effect for controlling SAF plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('saf-plants-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isSafPlantsVisible = layerVisibility?.safPlants || false;
-    const visibility = isSafPlantsVisible ? 'visible' : 'none';
-    console.log(`Setting SAF plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('saf-plants-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.safPlants]); // Depend on mapLoaded and the specific layerVisibility property
-
-  // Effect for controlling renewable diesel plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('renewable-diesel-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isRenewableDieselVisible = layerVisibility?.renewableDiesel || false;
-    const visibility = isRenewableDieselVisible ? 'visible' : 'none';
-    console.log(`Setting renewable diesel plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('renewable-diesel-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.renewableDiesel]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling landfill LFG projects layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('landfill-lfg-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isLandfillLfgVisible = layerVisibility?.landfillLfg || false;
-    const visibility = isLandfillLfgVisible ? 'visible' : 'none';
-    console.log(`Setting landfill LFG projects layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('landfill-lfg-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.landfillLfg]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling wastewater treatment plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('wastewater-treatment-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isWastewaterTreatmentVisible = layerVisibility?.wastewaterTreatment || false;
-    const visibility = isWastewaterTreatmentVisible ? 'visible' : 'none';
-    console.log(`Setting wastewater treatment plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('wastewater-treatment-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.wastewaterTreatment]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling waste to energy plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('waste-to-energy-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isWasteToEnergyVisible = layerVisibility?.wasteToEnergy || false;
-    const visibility = isWasteToEnergyVisible ? 'visible' : 'none';
-    console.log(`Setting waste to energy plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('waste-to-energy-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.wasteToEnergy]); // Depend on mapLoaded and the specific layerVisibility property
-  
-  // Effect for controlling combustion plants layer visibility
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !map.current.getLayer('combustion-plants-layer')) {
-      return; // Ensure map is loaded and layer exists
-    }
-
-    const isCombustionPlantsVisible = layerVisibility?.combustionPlants || false;
-    const visibility = isCombustionPlantsVisible ? 'visible' : 'none';
-    console.log(`Setting combustion plants layer visibility to: ${visibility}`);
-    map.current.setLayoutProperty('combustion-plants-layer', 'visibility', visibility);
-
-  }, [mapLoaded, layerVisibility?.combustionPlants]); // Depend on mapLoaded and the specific layerVisibility property
+  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [mapLoaded, layerVisibility]);
 
   // Define validateBufferState function before it's used in dependency arrays
   const validateBufferState = useCallback(() => {

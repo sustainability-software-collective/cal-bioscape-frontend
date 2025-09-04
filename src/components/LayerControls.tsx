@@ -26,6 +26,14 @@ import {
   CROP_NAME_MAPPING 
 } from '@/lib/constants';
 
+// Define a minimal type for the mapbox map instance to avoid using 'any'
+interface MapInstance {
+  getLayer: (id: string) => object | undefined;
+  setLayoutProperty: (layerId: string, name: string, value: 'visible' | 'none') => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setFilter: (layerId: string, filter: any[] | null | undefined) => void;
+}
+
 // Define the props interface
 interface LayerControlsProps {
   initialVisibility: { [key: string]: boolean };
@@ -211,9 +219,6 @@ const LayerControls: React.FC<LayerControlsProps> = ({
         }
       }
       
-      // Always update parent state to keep everything in sync
-      onCropFilterChange(visibleCrops);
-      
       return newState;
     });
   };
@@ -251,9 +256,6 @@ const LayerControls: React.FC<LayerControlsProps> = ({
           console.error('Error directly updating crop filter:', err);
         }
       }
-      
-      // Always update parent state to keep everything in sync
-      onCropFilterChange(visibleCrops);
       
       return newState;
     });
@@ -334,9 +336,6 @@ const LayerControls: React.FC<LayerControlsProps> = ({
         }
       }
       
-      // Always update parent state to keep everything in sync
-      onCropFilterChange(visibleCrops);
-      
       return newState;
     });
   };
@@ -358,9 +357,6 @@ const LayerControls: React.FC<LayerControlsProps> = ({
           }
         }
         
-        // Always update parent state to keep everything in sync
-        onCropFilterChange([]);
-        
         return newState;
      });
   };
@@ -368,10 +364,10 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   const isCroplandVisible = initialVisibility?.feedstock ?? false;
 
   // Get reference to the map
-  const getMapInstance = () => {
+  const getMapInstance = (): MapInstance | undefined => {
     // This is a workaround to access the map instance directly
     // Ideally, we would have a proper reference passed from the parent
-    const mapInstance = (window as any).mapboxMap;
+    const mapInstance = (window as unknown as { mapboxMap?: MapInstance }).mapboxMap;
     return mapInstance;
   };
   
@@ -466,18 +462,18 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                 <span className="no-underline">Layers</span>
               </div>
               <div className="flex items-center space-x-2">
-                <button 
+                <div
                   onClick={handleShowAllLayers}
-                  className="text-xs px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors layer-control-button"
+                  className="text-xs px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors layer-control-button cursor-pointer"
                 >
                   Show All
-                </button>
-                <button 
+                </div>
+                <div
                   onClick={handleHideAllLayers}
-                  className="text-xs px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors layer-control-button"
+                  className="text-xs px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors layer-control-button cursor-pointer"
                 >
                   Hide All
-                </button>
+                </div>
               </div>
             </div>
           </AccordionTrigger>
