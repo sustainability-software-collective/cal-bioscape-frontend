@@ -305,15 +305,16 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                       <div className="pl-6 mt-2 border-l-2 border-gray-200">
                         <button
                           onClick={() => setIsCropLegendCollapsed(!isCropLegendCollapsed)}
-                          className="text-sm font-medium text-left w-full py-1 hover:bg-gray-100 rounded"
+                          className="text-sm font-medium text-left w-full py-1 hover:bg-gray-100 rounded flex justify-between items-center"
                         >
-                          Filter Crop Types {isCropLegendCollapsed ? '▼' : '▲'}
+                          <span>Filter by Crop</span>
+                          <ChevronDown className={`text-muted-foreground size-4 shrink-0 transition-transform duration-200 ${isCropLegendCollapsed ? '-rotate-90' : 'rotate-0'}`} />
                         </button>
                         {!isCropLegendCollapsed && (
                           <div className="mt-2 space-y-3 pr-2 max-h-60 overflow-y-auto">
                             <Input
                               type="text"
-                              placeholder="Filter crops..."
+                              placeholder="Search crops..."
                               value={filterText}
                               onChange={(e) => setFilterText(e.target.value)}
                               className="text-xs h-8"

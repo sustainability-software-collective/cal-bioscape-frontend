@@ -173,7 +173,7 @@ export default function Home() {
 
   // Removed feedstockError check UI
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden">
+    <div className="h-screen w-screen flex flex-col overflow-hidden no-scroll">
       {/* Header with Logo */}
       <Header />
       

@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function ApiPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-y-auto">
       <Header />
       
       <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">

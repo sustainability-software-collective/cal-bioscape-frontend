@@ -119,14 +119,20 @@
     @apply bg-background text-foreground;
     margin: 0;
     padding: 0;
-    overflow: hidden;
     height: 100%;
     width: 100%;
   }
-  body {
-    position: fixed;
-    inset: 0;
-  }
+}
+
+/* Class for pages that need to disable scrolling (map page) */
+.no-scroll {
+  overflow: hidden;
+}
+
+.no-scroll body {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
 }
 
 /* --- Custom Mapbox Popup Styling --- */
