@@ -670,7 +670,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     markerElement.style.backgroundRepeat = 'no-repeat';
     markerElement.style.backgroundPosition = 'center';
     markerElement.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))';
-    markerElement.style.zIndex = '1000'; // Ensure it's above other elements
+    markerElement.style.zIndex = '5'; // Ensure it's below the UI cards (which have z-index: 10)
     markerElement.style.pointerEvents = 'auto'; // Allow interaction with the marker
 
     try {
