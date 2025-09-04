@@ -434,7 +434,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
     landfillLfg: 'landfill-lfg-layer',
     wastewaterTreatment: 'wastewater-treatment-layer',
     wasteToEnergy: 'waste-to-energy-layer',
-    combustionPlants: 'combustion-plants-layer'
+    combustionPlants: 'combustion-plants-layer',
+    districtEnergySystems: 'district-energy-systems-layer'
   };
 
   // Show all layers with proper state management
@@ -566,18 +567,18 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                                   checked={cropVisibility[cropName] ?? false}
                                   onCheckedChange={(checked) => handleCropToggle(cropName, !!checked)}
                                 />
-                                <span
-                                  style={{
-                                    display: 'inline-block',
-                                    width: '12px',
-                                    height: '12px',
-                                    backgroundColor: cropColorMapping[cropName],
-                                    border: '1px solid #ccc',
-                                    marginRight: '4px',
-                                    flexShrink: 0,
-                                  }}
-                                ></span>
-                                <Label htmlFor={`crop-${cropName}`} className="text-xs font-normal flex-grow truncate" title={cropName}>
+                                <Label htmlFor={`crop-${cropName}`} className="text-xs font-normal flex-grow truncate flex items-center" title={cropName}>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      width: '12px',
+                                      height: '12px',
+                                      backgroundColor: cropColorMapping[cropName],
+                                      border: '1px solid #ccc',
+                                      marginRight: '2px',
+                                      flexShrink: 0,
+                                    }}
+                                  ></span>
                                   {cropName}
                                 </Label>
                               </div>
@@ -606,7 +607,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         const infrastructureLayers = [
                           'anaerobicDigester', 'biodieselPlants', 'biorefineries', 'safPlants',
                           'renewableDiesel', 'mrf', 'cementPlants', 'landfillLfg',
-                          'wastewaterTreatment', 'wasteToEnergy', 'combustionPlants'
+                          'wastewaterTreatment', 'wasteToEnergy', 'combustionPlants', 'districtEnergySystems'
                         ];
 
                         // Update parent state for master checkbox
@@ -885,6 +886,29 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         Combustion Plants
                       </Label>
                     </div>
+                    
+                    {/* District Energy Systems Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="districtEnergySystemsLayer"
+                        checked={localLayerVisibility?.districtEnergySystems ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('districtEnergySystems', !!checked)}
+                      />
+                      <Label htmlFor="districtEnergySystemsLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#32CD32', /* LimeGreen color for District Energy Systems */
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        District Energy Systems
+                      </Label>
+                    </div>
                   </>
                 )}
               </div>
@@ -934,13 +958,12 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('railLines', !!checked)}
                       />
                       <Label htmlFor="railLinesLayer" className="flex items-center text-xs">
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '2px' }}>
                           <span
                             style={{
                               display: 'inline-block',
                               width: '16px',
-                              height: '3px',
-                              backgroundColor: '#FF4500',
+                              borderTop: '3px dashed #008B8B',
                               flexShrink: 0,
                             }}
                           ></span>
@@ -957,7 +980,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('freightTerminals', !!checked)}
                       />
                       <Label htmlFor="freightTerminalsLayer" className="flex items-center text-xs">
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '2px' }}>
                           <span
                             style={{
                               display: 'inline-block',
@@ -981,7 +1004,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('freightRoutes', !!checked)}
                       />
                       <Label htmlFor="freightRoutesLayer" className="flex items-center text-xs">
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '2px' }}>
                           <span
                             style={{
                               display: 'inline-block',
@@ -1004,7 +1027,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('petroleumPipelines', !!checked)}
                       />
                       <Label htmlFor="petroleumPipelinesLayer" className="flex items-center text-xs">
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '2px' }}>
                           <span
                             style={{
                               display: 'inline-block',
@@ -1027,7 +1050,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('crudeOilPipelines', !!checked)}
                       />
                       <Label htmlFor="crudeOilPipelinesLayer" className="flex items-center text-xs">
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '2px' }}>
                           <span
                             style={{
                               display: 'inline-block',
@@ -1050,7 +1073,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('naturalGasPipelines', !!checked)}
                       />
                       <Label htmlFor="naturalGasPipelinesLayer" className="flex items-center text-xs">
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '2px' }}>
                           <span
                             style={{
                               display: 'inline-block',

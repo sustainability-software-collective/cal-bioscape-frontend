@@ -1119,12 +1119,15 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             source: 'rail-lines-source',
             'source-layer': 'us_rail_lines_ftot-80b406',
             paint: {
-              'line-color': '#FF4500', // Orange-red color for rail lines
+              'line-color': '#008B8B', // Dark cyan color for rail lines
               'line-width': 2,
-              'line-opacity': 0.8
+              'line-opacity': 0.8,
+              'line-dasharray': [2, 2]
             },
             layout: {
-              'visibility': layerVisibility?.railLines ? 'visible' : 'none'
+              'visibility': layerVisibility?.railLines ? 'visible' : 'none',
+              'line-join': 'round',
+              'line-cap': 'round'
             }
           });
           console.log("Added rail lines layer with correct source layer 'us_rail_lines_ftot-80b406'");
@@ -1371,6 +1374,16 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           url: naturalGasPipelinesTilesetUrl
         });
         console.log("Added natural gas pipelines vector source");
+
+        // Add District Energy Systems infrastructure layer
+        const districtEnergySystemsTilesetUrl = 'mapbox://tylerhuntington222.DES_CBG_centroids';
+        console.log("Adding District Energy Systems tileset with URL:", districtEnergySystemsTilesetUrl);
+        
+        map.current.addSource('district-energy-systems-source', {
+          type: 'vector',
+          url: districtEnergySystemsTilesetUrl
+        });
+        console.log("Added District Energy Systems vector source");
 
         // Add sustainable aviation fuel plants layer with correct source layer
         try {
@@ -1716,6 +1729,29 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           console.log("Added combustion plants layer with correct source layer 'COMB_points'");
         } catch (error) {
           console.error("Failed to add combustion plants layer:", error);
+        }
+        
+        // Add District Energy Systems layer
+        try {
+          map.current.addLayer({
+            id: 'district-energy-systems-layer',
+            type: 'circle',
+            source: 'district-energy-systems-source',
+            'source-layer': 'DES_CBG_centroids',
+            paint: {
+              'circle-color': '#32CD32', // LimeGreen color for District Energy Systems
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.districtEnergySystems ? 'visible' : 'none'
+            }
+          });
+          console.log("Added District Energy Systems layer with correct source layer 'DES_CBG_centroids'");
+        } catch (error) {
+          console.error("Failed to add District Energy Systems layer:", error);
         }
         
         // Add petroleum pipelines layer (as part of transportation)
@@ -2507,6 +2543,78 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             }
           });
 
+          // --- Add Click Listener for District Energy Systems Layer (Display Properties) ---
+          map.current.on('click', 'district-energy-systems-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">District Energy System Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for District Energy System:', properties);
+            }
+          });
+
       }); // Closing bracket for map.current.on('load', ...)
 
       // Handle errors during map initialization
@@ -2654,6 +2762,7 @@ useEffect(() => {
     'wastewater-treatment-layer': layerVisibility?.wastewaterTreatment,
     'waste-to-energy-layer': layerVisibility?.wasteToEnergy,
     'combustion-plants-layer': layerVisibility?.combustionPlants,
+    'district-energy-systems-layer': layerVisibility?.districtEnergySystems,
   };
 
   Object.entries(layerMapping).forEach(([layerId, isVisible]) => {
