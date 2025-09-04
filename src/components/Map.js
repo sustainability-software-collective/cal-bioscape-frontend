@@ -1414,29 +1414,29 @@ useEffect(() => {
   }, [mapLoaded, sitingMode, hasPlacedMarker, radius, unit, createBuffer, cleanupSitingElements]);
 
 // Effect for periodic buffer state validation
-  useEffect(() => {
-    if (!mapLoaded || !map.current) return;
-    
-          // Validate buffer state every 2 seconds to catch inconsistencies
-    const validationInterval = setInterval(() => {
-      validateBufferState();
-    }, 2000);
-    
-    return () => {
-      clearInterval(validationInterval);
-    };
-  }, [mapLoaded, sitingMode, hasPlacedMarker, radius, unit, validateBufferState]);
+useEffect(() => {
+  if (!mapLoaded || !map.current) return;
+  
+  // Validate buffer state every 2 seconds to catch inconsistencies
+  const validationInterval = setInterval(() => {
+    validateBufferState();
+  }, 2000);
+  
+  return () => {
+    clearInterval(validationInterval);
+  };
+}, [mapLoaded, sitingMode, hasPlacedMarker, radius, unit, validateBufferState]);
 
-  // Effect to clean up buffers when siting mode is disabled
-  useEffect(() => {
-    if (!mapLoaded || !map.current) return;
-    
-    // If siting mode is disabled, ensure all buffers are cleaned up
-    if (!sitingMode) {
-      console.log('Siting mode disabled - ensuring buffers are cleaned up...');
-      cleanupSitingElements();
-    }
-  }, [mapLoaded, sitingMode, cleanupSitingElements]);
+// Effect to clean up buffers when siting mode is disabled
+useEffect(() => {
+  if (!mapLoaded || !map.current) return;
+  
+  // If siting mode is disabled, ensure all buffers are cleaned up
+  if (!sitingMode) {
+    console.log('Siting mode disabled - ensuring buffers are cleaned up...');
+    cleanupSitingElements();
+  }
+}, [mapLoaded, sitingMode, cleanupSitingElements]);
 
 // Color mapping definition removed - will be handled in LayerControls
 

@@ -115,8 +115,17 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
+  html, body {
     @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+  }
+  body {
+    position: fixed;
+    inset: 0;
   }
 }
 
@@ -145,6 +154,8 @@
   flex: 1 1 auto !important;
   margin: 0 !important;
   padding: 0 !important;
+  position: absolute !important;
+  inset: 0 !important;
 }
 
 .mapboxgl-canvas {
@@ -157,4 +168,11 @@
 .mapboxgl-canvas-container {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Fix for white line on the right */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
 }

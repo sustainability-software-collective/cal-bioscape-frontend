@@ -13,9 +13,9 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 py-1">
-      <div className="w-full px-6 ml-8 sm:px-4 lg:px-6">
-        <div className="flex items-center justify-between h-12">
+    <header className="bg-white shadow-sm border-b border-gray-200 py-1 flex-shrink-0 w-full">
+      <div className="w-full px-4 lg:px-6">
+        <div className="flex items-center justify-between h-12 ml-8">
           {/* Logo and Site Name */}
           <div className="flex items-center">
             <button 
@@ -24,7 +24,7 @@ export default function Header() {
             >
               <Image
                 src="/cal-biomap-logo-no-text.png"
-                alt="CAL  Logo"
+                alt="CAL Logo"
                 width={48}
                 height={48}
                 className="h-10 w-10"
@@ -37,7 +37,7 @@ export default function Header() {
           </div>
 
           {/* Navigation */}
-          <nav className="ml-auto flex items-center space-x-8 pr-12">
+          <nav className="ml-auto flex items-center space-x-8 mr-10">
             <Link 
               href="/"
               className={`text-sm font-medium ${pathname === '/' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'} transition-colors duration-200`}

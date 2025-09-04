@@ -116,12 +116,12 @@ export default function Home() {
 
   // Removed feedstockError check UI
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
       {/* Header with Logo */}
       <Header />
       
       {/* Main Content */}
-      <main className="flex flex-1 relative w-full overflow-hidden">
+      <main className="flex flex-1 relative w-full h-full overflow-hidden">
         {/* Container for Layer Controls */}
         <div className={`${isPanelCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 ease-in-out overflow-hidden bg-gray-100 flex-shrink-0`}>
           <div className="p-4 h-full overflow-y-auto">
@@ -178,7 +178,7 @@ export default function Home() {
         </button>
         
         {/* Container for the Map, taking remaining space and full height */}
-        <div className="flex-1 h-full w-full">
+        <div className="flex-1 h-full w-full relative overflow-hidden">
           {/* Pass fetched data and visibility state to the Map component */}
           <Map
             layerVisibility={layerVisibility}
