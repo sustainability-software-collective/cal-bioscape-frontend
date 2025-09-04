@@ -396,7 +396,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             flexShrink: 0,
                           }}
                         ></span>
-                        Anaerobic Digesters
+                        Livestock Anaerobic Digesters
                       </Label>
                     </div>
                     
@@ -537,6 +537,52 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         Biodiesel Plants
                       </Label>
                     </div>
+                    
+                    {/* Landfills with LFG Projects Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="landfillLfgLayer"
+                        checked={initialVisibility?.landfillLfg ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('landfillLfg', !!checked)}
+                      />
+                      <Label htmlFor="landfillLfgLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#800080',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Landfills with LFG Projects
+                      </Label>
+                    </div>
+                    
+                    {/* Wastewater Treatment Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="wastewaterTreatmentLayer"
+                        checked={initialVisibility?.wastewaterTreatment ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('wastewaterTreatment', !!checked)}
+                      />
+                      <Label htmlFor="wastewaterTreatmentLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#00CED1',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Wastewater Treatment Plants
+                      </Label>
+                    </div>
                   </>
                 )}
               </div>
@@ -632,6 +678,75 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         Freight Routes
                       </Label>
                     </div>
+                    
+                    {/* Petroleum Pipelines Layer Toggle - Under Transportation */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="petroleumPipelinesLayer"
+                        checked={initialVisibility?.petroleumPipelines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('petroleumPipelines', !!checked)}
+                      />
+                      <Label htmlFor="petroleumPipelinesLayer" className="flex items-center text-xs">
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '16px',
+                              height: '3px',
+                              backgroundColor: '#FF4500',
+                              flexShrink: 0,
+                            }}
+                          ></span>
+                        </div>
+                        Petroleum Pipelines
+                      </Label>
+                    </div>
+                    
+                    {/* Crude Oil Pipelines Layer Toggle - Under Transportation */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="crudeOilPipelinesLayer"
+                        checked={initialVisibility?.crudeOilPipelines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('crudeOilPipelines', !!checked)}
+                      />
+                      <Label htmlFor="crudeOilPipelinesLayer" className="flex items-center text-xs">
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '16px',
+                              height: '3px',
+                              backgroundColor: '#8B0000',
+                              flexShrink: 0,
+                            }}
+                          ></span>
+                        </div>
+                        Crude Oil Pipelines
+                      </Label>
+                    </div>
+                    
+                    {/* Natural Gas Pipelines Layer Toggle - Under Transportation */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="naturalGasPipelinesLayer"
+                        checked={initialVisibility?.naturalGasPipelines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('naturalGasPipelines', !!checked)}
+                      />
+                      <Label htmlFor="naturalGasPipelinesLayer" className="flex items-center text-xs">
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '16px',
+                              height: '3px',
+                              backgroundColor: '#4169E1',
+                              flexShrink: 0,
+                            }}
+                          ></span>
+                        </div>
+                        Natural Gas Pipelines
+                      </Label>
+                    </div>
                   </>
                 )}
               </div>
@@ -653,7 +768,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
               <div className="space-y-3">
                 <div className="px-2">
                   <Label className="text-sm font-medium flex items-center">
-                    Seasonal Availability
+                    Feedstock Seasonal Availability
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

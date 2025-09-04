@@ -1281,6 +1281,56 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           url: biodieselPlantsTilesetUrl
         });
         console.log("Added biodiesel plants vector source");
+        
+        // Add landfills with LFG projects infrastructure layer
+        const landfillLfgTilesetUrl = 'mapbox://tylerhuntington222.0pobnuqo';
+        console.log("Adding landfills with LFG projects tileset with URL:", landfillLfgTilesetUrl);
+        
+        map.current.addSource('landfill-lfg-source', {
+          type: 'vector',
+          url: landfillLfgTilesetUrl
+        });
+        console.log("Added landfills with LFG projects vector source");
+        
+        // Add wastewater treatment plants infrastructure layer
+        const wastewaterTreatmentTilesetUrl = 'mapbox://tylerhuntington222.ck7dox5nd07jj2rsxw4kvp5sy-3vnad';
+        console.log("Adding wastewater treatment plants tileset with URL:", wastewaterTreatmentTilesetUrl);
+        
+        map.current.addSource('wastewater-treatment-source', {
+          type: 'vector',
+          url: wastewaterTreatmentTilesetUrl
+        });
+        console.log("Added wastewater treatment plants vector source");
+        
+        // Add petroleum pipelines infrastructure layer
+        const petroleumPipelinesTilesetUrl = 'mapbox://tylerhuntington222.b4obgo1f';
+        console.log("Adding petroleum pipelines tileset with URL:", petroleumPipelinesTilesetUrl);
+        
+        map.current.addSource('petroleum-pipelines-source', {
+          type: 'vector',
+          url: petroleumPipelinesTilesetUrl
+        });
+        console.log("Added petroleum pipelines vector source");
+        
+        // Add crude oil pipelines infrastructure layer
+        const crudeOilPipelinesTilesetUrl = 'mapbox://tylerhuntington222.9llifnsy';
+        console.log("Adding crude oil pipelines tileset with URL:", crudeOilPipelinesTilesetUrl);
+        
+        map.current.addSource('crude-oil-pipelines-source', {
+          type: 'vector',
+          url: crudeOilPipelinesTilesetUrl
+        });
+        console.log("Added crude oil pipelines vector source");
+        
+        // Add natural gas pipelines infrastructure layer
+        const naturalGasPipelinesTilesetUrl = 'mapbox://tylerhuntington222.9iavmtjd';
+        console.log("Adding natural gas pipelines tileset with URL:", naturalGasPipelinesTilesetUrl);
+        
+        map.current.addSource('natural-gas-pipelines-source', {
+          type: 'vector',
+          url: naturalGasPipelinesTilesetUrl
+        });
+        console.log("Added natural gas pipelines vector source");
 
         // Add sustainable aviation fuel plants layer with correct source layer
         try {
@@ -1534,6 +1584,115 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           console.log("Added biodiesel plants layer with correct source layer 'biodiesel_plants-69v9v0'");
         } catch (error) {
           console.error("Failed to add biodiesel plants layer:", error);
+        }
+        
+        // Add landfills with LFG projects layer
+        try {
+          map.current.addLayer({
+            id: 'landfill-lfg-layer',
+            type: 'circle',
+            source: 'landfill-lfg-source',
+            'source-layer': '0pobnuqo', // Source layer name from tileset ID
+            paint: {
+              'circle-color': '#800080', // Purple color for landfills with LFG projects
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.landfillLfg ? 'visible' : 'none'
+            }
+          });
+          console.log("Added landfills with LFG projects layer with correct source layer '0pobnuqo'");
+        } catch (error) {
+          console.error("Failed to add landfills with LFG projects layer:", error);
+        }
+        
+        // Add wastewater treatment plants layer
+        try {
+          map.current.addLayer({
+            id: 'wastewater-treatment-layer',
+            type: 'circle',
+            source: 'wastewater-treatment-source',
+            'source-layer': 'us_wwt_pts', // Source layer name provided
+            paint: {
+              'circle-color': '#00CED1', // Turquoise color for wastewater treatment plants
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.wastewaterTreatment ? 'visible' : 'none'
+            }
+          });
+          console.log("Added wastewater treatment plants layer with correct source layer 'us_wwt_pts'");
+        } catch (error) {
+          console.error("Failed to add wastewater treatment plants layer:", error);
+        }
+        
+        // Add petroleum pipelines layer (as part of transportation)
+        try {
+          map.current.addLayer({
+            id: 'petroleum-pipelines-layer',
+            type: 'line',
+            source: 'petroleum-pipelines-source',
+            'source-layer': 'us_petrol_prod_pipelines_ftot-4f7wgo', // Source layer name provided
+            paint: {
+              'line-color': '#FF4500', // OrangeRed color for petroleum pipelines
+              'line-width': 2,
+              'line-opacity': 0.7
+            },
+            layout: {
+              'visibility': layerVisibility?.petroleumPipelines ? 'visible' : 'none'
+            }
+          });
+          console.log("Added petroleum pipelines layer with correct source layer 'us_petrol_prod_pipelines_ftot-4f7wgo'");
+        } catch (error) {
+          console.error("Failed to add petroleum pipelines layer:", error);
+        }
+        
+        // Add crude oil pipelines layer (as part of transportation)
+        try {
+          map.current.addLayer({
+            id: 'crude-oil-pipelines-layer',
+            type: 'line',
+            source: 'crude-oil-pipelines-source',
+            'source-layer': 'us_crude_pipeline_ftot-bhu6j4', // Source layer name provided
+            paint: {
+              'line-color': '#8B0000', // DarkRed color for crude oil pipelines
+              'line-width': 2,
+              'line-opacity': 0.7
+            },
+            layout: {
+              'visibility': layerVisibility?.crudeOilPipelines ? 'visible' : 'none'
+            }
+          });
+          console.log("Added crude oil pipelines layer with correct source layer 'us_crude_pipeline_ftot-bhu6j4'");
+        } catch (error) {
+          console.error("Failed to add crude oil pipelines layer:", error);
+        }
+        
+        // Add natural gas pipelines layer (as part of transportation)
+        try {
+          map.current.addLayer({
+            id: 'natural-gas-pipelines-layer',
+            type: 'line',
+            source: 'natural-gas-pipelines-source',
+            'source-layer': 'hifld_us_natural_gas_pipeline-4prihp', // Source layer name provided
+            paint: {
+              'line-color': '#4169E1', // RoyalBlue color for natural gas pipelines
+              'line-width': 2,
+              'line-opacity': 0.7
+            },
+            layout: {
+              'visibility': layerVisibility?.naturalGasPipelines ? 'visible' : 'none'
+            }
+          });
+          console.log("Added natural gas pipelines layer with correct source layer 'hifld_us_natural_gas_pipeline-4prihp'");
+        } catch (error) {
+          console.error("Failed to add natural gas pipelines layer:", error);
         }
 
         // --- Add Click Listener for Feedstock Layer (Display Properties) ---
@@ -2342,17 +2501,56 @@ useEffect(() => {
 }, [mapLoaded, layerVisibility?.freightTerminals]); // Depend on mapLoaded and the specific layerVisibility property
 
 // Effect for controlling freight routes layer visibility
-useEffect(() => {
-  if (!mapLoaded || !map.current || !map.current.getLayer('freight-routes-layer')) {
-    return; // Ensure map is loaded and layer exists
-  }
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('freight-routes-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
 
-  const isFreightRoutesVisible = layerVisibility?.freightRoutes || false;
-  const visibility = isFreightRoutesVisible ? 'visible' : 'none';
-  console.log(`Setting freight routes layer visibility to: ${visibility}`);
-  map.current.setLayoutProperty('freight-routes-layer', 'visibility', visibility);
+    const isFreightRoutesVisible = layerVisibility?.freightRoutes || false;
+    const visibility = isFreightRoutesVisible ? 'visible' : 'none';
+    console.log(`Setting freight routes layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('freight-routes-layer', 'visibility', visibility);
 
-}, [mapLoaded, layerVisibility?.freightRoutes]); // Depend on mapLoaded and the specific layerVisibility property
+  }, [mapLoaded, layerVisibility?.freightRoutes]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling petroleum pipelines layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('petroleum-pipelines-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isPetroleumPipelinesVisible = layerVisibility?.petroleumPipelines || false;
+    const visibility = isPetroleumPipelinesVisible ? 'visible' : 'none';
+    console.log(`Setting petroleum pipelines layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('petroleum-pipelines-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.petroleumPipelines]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling crude oil pipelines layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('crude-oil-pipelines-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isCrudeOilPipelinesVisible = layerVisibility?.crudeOilPipelines || false;
+    const visibility = isCrudeOilPipelinesVisible ? 'visible' : 'none';
+    console.log(`Setting crude oil pipelines layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('crude-oil-pipelines-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.crudeOilPipelines]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling natural gas pipelines layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('natural-gas-pipelines-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isNaturalGasPipelinesVisible = layerVisibility?.naturalGasPipelines || false;
+    const visibility = isNaturalGasPipelinesVisible ? 'visible' : 'none';
+    console.log(`Setting natural gas pipelines layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('natural-gas-pipelines-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.naturalGasPipelines]); // Depend on mapLoaded and the specific layerVisibility property
 
 // Effect for controlling anaerobic digester layer visibility
 useEffect(() => {
@@ -2444,6 +2642,32 @@ useEffect(() => {
     map.current.setLayoutProperty('renewable-diesel-layer', 'visibility', visibility);
 
   }, [mapLoaded, layerVisibility?.renewableDiesel]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling landfill LFG projects layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('landfill-lfg-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isLandfillLfgVisible = layerVisibility?.landfillLfg || false;
+    const visibility = isLandfillLfgVisible ? 'visible' : 'none';
+    console.log(`Setting landfill LFG projects layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('landfill-lfg-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.landfillLfg]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling wastewater treatment plants layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('wastewater-treatment-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isWastewaterTreatmentVisible = layerVisibility?.wastewaterTreatment || false;
+    const visibility = isWastewaterTreatmentVisible ? 'visible' : 'none';
+    console.log(`Setting wastewater treatment plants layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('wastewater-treatment-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.wastewaterTreatment]); // Depend on mapLoaded and the specific layerVisibility property
 
   // Define validateBufferState function before it's used in dependency arrays
   const validateBufferState = useCallback(() => {

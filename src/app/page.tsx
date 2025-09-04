@@ -19,11 +19,16 @@ export default function Home() {
     biodieselPlants: false, 
     freightTerminals: false, 
     freightRoutes: false,
+    petroleumPipelines: false,
+    crudeOilPipelines: false,
+    naturalGasPipelines: false,
     biorefineries: false,
     safPlants: false,
     renewableDiesel: false,
     mrf: false,
-    cementPlants: false
+    cementPlants: false,
+    landfillLfg: false,
+    wastewaterTreatment: false
   }); // Added all new layers
 
   // State for panel collapse
@@ -55,6 +60,8 @@ export default function Home() {
            layerVisibility.renewableDiesel || 
            layerVisibility.mrf || 
            layerVisibility.cementPlants || 
+           layerVisibility.landfillLfg || 
+           layerVisibility.wastewaterTreatment || 
            false;
   }, [
     layerVisibility.anaerobicDigester, 
@@ -63,12 +70,27 @@ export default function Home() {
     layerVisibility.safPlants,
     layerVisibility.renewableDiesel,
     layerVisibility.mrf,
-    layerVisibility.cementPlants
+    layerVisibility.cementPlants,
+    layerVisibility.landfillLfg,
+    layerVisibility.wastewaterTreatment
   ]);
 
   const computedTransportationMaster = useMemo(() => {
-    return layerVisibility.railLines || layerVisibility.freightTerminals || layerVisibility.freightRoutes || false;
-  }, [layerVisibility.railLines, layerVisibility.freightTerminals, layerVisibility.freightRoutes]);
+    return layerVisibility.railLines || 
+           layerVisibility.freightTerminals || 
+           layerVisibility.freightRoutes || 
+           layerVisibility.petroleumPipelines || 
+           layerVisibility.crudeOilPipelines || 
+           layerVisibility.naturalGasPipelines || 
+           false;
+  }, [
+    layerVisibility.railLines, 
+    layerVisibility.freightTerminals, 
+    layerVisibility.freightRoutes,
+    layerVisibility.petroleumPipelines,
+    layerVisibility.crudeOilPipelines,
+    layerVisibility.naturalGasPipelines
+  ]);
 
   // State for cropland layer opacity
   const [croplandOpacity, setCroplandOpacity] = useState<number>(0.6); // Default opacity
@@ -120,6 +142,8 @@ export default function Home() {
       renewableDiesel: isVisible, // Toggle renewable diesel plants layer with infrastructure
       mrf: isVisible, // Toggle material recovery facilities layer with infrastructure
       cementPlants: isVisible, // Toggle cement plants layer with infrastructure
+      landfillLfg: isVisible, // Toggle landfills with LFG projects layer with infrastructure
+      wastewaterTreatment: isVisible, // Toggle wastewater treatment plants layer with infrastructure
     }));
     console.log(`Toggled infrastructure master to ${isVisible}, infrastructure layers set to ${isVisible}`);
   };
@@ -133,6 +157,9 @@ export default function Home() {
       railLines: isVisible, // Automatically toggle rail lines with transportation
       freightTerminals: isVisible, // Automatically toggle freight terminals with transportation
       freightRoutes: isVisible, // Automatically toggle freight routes with transportation
+      petroleumPipelines: isVisible, // Automatically toggle petroleum pipelines with transportation
+      crudeOilPipelines: isVisible, // Automatically toggle crude oil pipelines with transportation
+      naturalGasPipelines: isVisible, // Automatically toggle natural gas pipelines with transportation
       // Add more transportation sublayers here as needed
     }));
     console.log(`Toggled transportation master to ${isVisible}, all transportation sublayers set to ${isVisible}`);
@@ -197,7 +224,7 @@ export default function Home() {
           onClick={togglePanelCollapse}
           className="absolute top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 ease-in-out"
           style={{ 
-            left: isPanelCollapsed ? '8px' : '364px'
+            left: isPanelCollapsed ? '8px' : '333px'
           }}
         >
           {isPanelCollapsed ? (
