@@ -835,6 +835,137 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       map.current.on('load', () => {
         console.log("Map loaded successfully");
         setMapLoaded(true); // Set map loaded state to true
+        
+        // Add a debug function to inspect the SAF/RD data when it's loaded
+        map.current.on('sourcedata', function(e) {
+          if (e.sourceId === 'cement-plants-source' && e.isSourceLoaded) {
+            try {
+              console.log("Cement plants source data loaded, inspecting features...");
+              
+              // Get the style and check the source layers
+              const style = map.current.getStyle();
+              if (style && style.sources && style.sources['cement-plants-source']) {
+                console.log("Cement plants source exists in style:", style.sources['cement-plants-source']);
+                
+                // Check if we can get the vector layers info
+                if (style.sources['cement-plants-source'].vectorLayers) {
+                  console.log("Vector layers in cement plants source:", style.sources['cement-plants-source'].vectorLayers);
+                } else {
+                  console.log("No vectorLayers property in cement plants source");
+                }
+              }
+              
+              // Try to get features from the source
+              const features = map.current.querySourceFeatures('cement-plants-source', {
+                sourceLayer: 'cement_facility_location-aiusqe'
+              });
+              
+              console.log(`Found ${features.length} features in the cement plants tileset`);
+              
+              if (features.length > 0) {
+                // Log the properties of the first few features
+                console.log('Sample cement plant feature properties:', features[0].properties);
+                
+                // Remove this event handler after it runs once
+                map.current.off('sourcedata');
+              } else {
+                // Try alternative layer names
+                                  console.log("Trying alternative layer names for cement plants...");
+                  
+                  // Try with just 'cement_facility_location'
+                  const featuresAlt1 = map.current.querySourceFeatures('cement-plants-source', {
+                    sourceLayer: 'cement_facility_location'
+                  });
+                  console.log(`Found ${featuresAlt1.length} features with layer name 'cement_facility_location'`);
+                  
+                  // Try with just 'cement'
+                  const featuresAlt2 = map.current.querySourceFeatures('cement-plants-source', {
+                    sourceLayer: 'cement'
+                  });
+                  console.log(`Found ${featuresAlt2.length} features with layer name 'cement'`);
+                  
+                  // Try with full tileset ID
+                  const featuresAlt3 = map.current.querySourceFeatures('cement-plants-source', {
+                    sourceLayer: '4ffuy21y'
+                  });
+                  console.log(`Found ${featuresAlt3.length} features with layer name '4ffuy21y'`);
+              }
+              
+              // Don't remove this handler yet so we can see multiple load events
+              // map.current.off('sourcedata');
+            } catch (err) {
+              console.error('Error examining cement plants source features:', err);
+            }
+          }
+          else if (e.sourceId === 'mrf-source' && e.isSourceLoaded) {
+            try {
+              console.log("MRF source data loaded, inspecting features...");
+              
+              // Try to get features from the source
+              const features = map.current.querySourceFeatures('mrf-source', {
+                sourceLayer: 'us_mrf_pts-206gpg'
+              });
+              
+              console.log(`Found ${features.length} features in the MRF tileset`);
+              
+              if (features.length > 0) {
+                // Log the properties of the first few features
+                console.log("Sample MRF feature properties:");
+                for (let i = 0; i < Math.min(3, features.length); i++) {
+                  console.log(`Feature ${i}:`, features[i].properties);
+                }
+                
+                // Remove this event handler after it runs once
+                map.current.off('sourcedata');
+              }
+            } catch (err) {
+              console.error('Error examining MRF source features:', err);
+            }
+          }
+          else if (e.sourceId === 'saf-plants-source' && e.isSourceLoaded) {
+            try {
+              console.log("SAF/RD source data loaded, inspecting features...");
+              
+              // Try to get features from the source
+              const features = map.current.querySourceFeatures('saf-plants-source', {
+                sourceLayer: 'renewable_diesel_saf_plants-79er6d'
+              });
+              
+              console.log(`Found ${features.length} features in the SAF/RD tileset`);
+              
+              if (features.length > 0) {
+                // Log the properties of the first few features
+                console.log("Sample feature properties:");
+                for (let i = 0; i < Math.min(3, features.length); i++) {
+                  console.log(`Feature ${i}:`, features[i].properties);
+                }
+                
+                // Count features with 'SAF' in products
+                const safFeatures = features.filter(f => 
+                  f.properties && 
+                  f.properties.products && 
+                  typeof f.properties.products === 'string' && 
+                  f.properties.products.toUpperCase().includes('SAF')
+                );
+                console.log(`Found ${safFeatures.length} features with 'SAF' in products`);
+                
+                // Count features with 'RD' in products
+                const rdFeatures = features.filter(f => 
+                  f.properties && 
+                  f.properties.products && 
+                  typeof f.properties.products === 'string' && 
+                  f.properties.products.toUpperCase().includes('RD')
+                );
+                console.log(`Found ${rdFeatures.length} features with 'RD' in products`);
+                
+                // Remove this event handler after it runs once
+                map.current.off('sourcedata');
+              }
+            } catch (err) {
+              console.error('Error examining source features:', err);
+            }
+          }
+        });
 
         // Add new vector source for Feedstock data
         map.current.addSource('feedstock-vector-source', {
@@ -1078,6 +1209,69 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           console.error("Failed to add anaerobic digester layer:", error);
         }
 
+        // Add biorefineries infrastructure layer
+        const biorefineriesTilesetUrl = 'mapbox://tylerhuntington222.current_biorefineries';
+        console.log("Adding biorefineries tileset with URL:", biorefineriesTilesetUrl);
+        
+        map.current.addSource('biorefineries-source', {
+          type: 'vector',
+          url: biorefineriesTilesetUrl
+        });
+        console.log("Added biorefineries vector source");
+
+        // Add biorefineries layer with correct source layer
+        try {
+          map.current.addLayer({
+            id: 'biorefineries-layer',
+            type: 'circle',
+            source: 'biorefineries-source',
+            'source-layer': 'current_biorefineries',
+            paint: {
+              'circle-color': '#9370DB', // Medium purple color for biorefineries
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.biorefineries ? 'visible' : 'none'
+            }
+          });
+          console.log("Added biorefineries layer with correct source layer 'current_biorefineries'");
+        } catch (error) {
+          console.error("Failed to add biorefineries layer:", error);
+        }
+
+        // Add cement plants infrastructure layer
+        const cementPlantsTilesetUrl = 'mapbox://tylerhuntington222.4ffuy21y';
+        console.log("Adding cement plants tileset with URL:", cementPlantsTilesetUrl);
+        
+        map.current.addSource('cement-plants-source', {
+          type: 'vector',
+          url: cementPlantsTilesetUrl
+        });
+        console.log("Added cement plants vector source");
+        
+        // Add material recovery facilities infrastructure layer
+        const mrfTilesetUrl = 'mapbox://tylerhuntington222.7pptvxpd';
+        console.log("Adding material recovery facilities tileset with URL:", mrfTilesetUrl);
+        
+        map.current.addSource('mrf-source', {
+          type: 'vector',
+          url: mrfTilesetUrl
+        });
+        console.log("Added material recovery facilities vector source");
+        
+        // Add sustainable aviation fuel plants infrastructure layer
+        const safPlantsTilesetUrl = 'mapbox://tylerhuntington222.6x05ytem';
+        console.log("Adding sustainable aviation fuel plants tileset with URL:", safPlantsTilesetUrl);
+        
+        map.current.addSource('saf-plants-source', {
+          type: 'vector',
+          url: safPlantsTilesetUrl
+        });
+        console.log("Added sustainable aviation fuel plants vector source");
+        
         // Add biodiesel plants infrastructure layer
         const biodieselPlantsTilesetUrl = 'mapbox://tylerhuntington222.3eyv4hdj';
         console.log("Adding biodiesel plants tileset with URL:", biodieselPlantsTilesetUrl);
@@ -1087,6 +1281,237 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           url: biodieselPlantsTilesetUrl
         });
         console.log("Added biodiesel plants vector source");
+
+        // Add sustainable aviation fuel plants layer with correct source layer
+        try {
+          // First, add the layer without filtering to ensure it loads
+          map.current.addLayer({
+            id: 'saf-plants-layer',
+            type: 'circle',
+            source: 'saf-plants-source',
+            'source-layer': 'renewable_diesel_saf_plants-79er6d',
+            paint: {
+              'circle-color': '#1E90FF', // Dodger blue color for SAF plants
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.safPlants ? 'visible' : 'none'
+            }
+          });
+          
+          // Log the available properties in the first feature for debugging
+          map.current.on('sourcedata', function(e) {
+            if (e.sourceId === 'saf-plants-source' && e.isSourceLoaded) {
+              try {
+                // Try to get features from the source
+                const features = map.current.querySourceFeatures('saf-plants-source', {
+                  sourceLayer: 'renewable_diesel_saf_plants-79er6d'
+                });
+                
+                if (features && features.length > 0) {
+                  console.log('Sample SAF plant feature properties:', features[0].properties);
+                  
+                  // Now apply the filter after we've seen the data
+                  map.current.setFilter('saf-plants-layer', [
+                    'any',
+                    [
+                      'all',
+                      ['has', 'products'], // First check if the feature has a products property
+                      ['==', ['typeof', ['get', 'products']], 'string'], // Check if products is a string
+                      ['!=', ['index-of', ['upcase', 'SAF'], ['upcase', ['get', 'products']]], -1] // Check if 'SAF' is in products
+                    ],
+                    [
+                      'all',
+                      ['has', 'Products'], // Try with capital P as well
+                      ['==', ['typeof', ['get', 'Products']], 'string'],
+                      ['!=', ['index-of', ['upcase', 'SAF'], ['upcase', ['get', 'Products']]], -1]
+                    ]
+                  ]);
+                  
+                  // Remove this event handler after it runs once
+                  map.current.off('sourcedata');
+                }
+              } catch (err) {
+                console.error('Error examining source features:', err);
+              }
+            }
+          });
+          
+          // Apply a simple filter initially
+          map.current.setFilter('saf-plants-layer', [
+            'any',
+            ['has', 'products'], // Check if the feature has a products property
+            ['has', 'Products']  // Try with capital P as well
+          ]);
+          
+          console.log("Added sustainable aviation fuel plants layer - will filter for 'SAF' in products when data loads");
+        } catch (error) {
+          console.error("Failed to add sustainable aviation fuel plants layer:", error);
+        }
+        
+        // Add renewable diesel plants layer using the same source but filtered
+        try {
+          map.current.addLayer({
+            id: 'renewable-diesel-layer',
+            type: 'circle',
+            source: 'saf-plants-source', // Using the same source as SAF plants
+            'source-layer': 'renewable_diesel_saf_plants-79er6d',
+            paint: {
+              'circle-color': '#FF8C00', // Dark orange color for renewable diesel plants
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.renewableDiesel ? 'visible' : 'none'
+            }
+          });
+          
+          // Log the available properties in the first feature for debugging
+          map.current.on('sourcedata', function(e) {
+            if (e.sourceId === 'saf-plants-source' && e.isSourceLoaded) {
+              try {
+                // Try to get features from the source
+                const features = map.current.querySourceFeatures('saf-plants-source', {
+                  sourceLayer: 'renewable_diesel_saf_plants-79er6d'
+                });
+                
+                if (features && features.length > 0) {
+                  console.log('Sample RD plant feature properties:', features[0].properties);
+                  
+                  // Now apply the filter after we've seen the data
+                  map.current.setFilter('renewable-diesel-layer', [
+                    'any',
+                    [
+                      'all',
+                      ['has', 'products'], // First check if the feature has a products property
+                      ['==', ['typeof', ['get', 'products']], 'string'], // Check if products is a string
+                      ['!=', ['index-of', ['upcase', 'RD'], ['upcase', ['get', 'products']]], -1] // Check if 'RD' is in products
+                    ],
+                    [
+                      'all',
+                      ['has', 'Products'], // Try with capital P as well
+                      ['==', ['typeof', ['get', 'Products']], 'string'],
+                      ['!=', ['index-of', ['upcase', 'RD'], ['upcase', ['get', 'Products']]], -1]
+                    ]
+                  ]);
+                  
+                  // Remove this event handler after it runs once
+                  map.current.off('sourcedata');
+                }
+              } catch (err) {
+                console.error('Error examining source features:', err);
+              }
+            }
+          });
+          
+          // Apply a simple filter initially
+          map.current.setFilter('renewable-diesel-layer', [
+            'any',
+            ['has', 'products'], // Check if the feature has a products property
+            ['has', 'Products']  // Try with capital P as well
+          ]);
+          
+          console.log("Added renewable diesel plants layer - will filter for 'RD' in products when data loads");
+        } catch (error) {
+          console.error("Failed to add renewable diesel plants layer:", error);
+        }
+        
+        // Add cement plants layer with the correct source layer name
+        try {
+          map.current.addLayer({
+            id: 'cement-plants-layer',
+            type: 'circle',
+            source: 'cement-plants-source',
+            'source-layer': 'cement_facility_location-aiusqe', // Confirmed source layer name
+            paint: {
+              'circle-color': '#708090', // Slate gray color for cement plants
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.cementPlants ? 'visible' : 'none'
+            }
+          });
+          
+          // Log the available properties in the first feature for debugging
+          map.current.on('sourcedata', function(e) {
+            if (e.sourceId === 'cement-plants-source' && e.isSourceLoaded) {
+              try {
+                // Try to get features from the source
+                const features = map.current.querySourceFeatures('cement-plants-source', {
+                  sourceLayer: '4ffuy21y'
+                });
+                
+                console.log(`Found ${features.length} features in the cement plants tileset`);
+                
+                if (features && features.length > 0) {
+                  console.log('Sample cement plant feature properties:', features[0].properties);
+                  
+                  // Remove this event handler after it runs once
+                  map.current.off('sourcedata');
+                }
+              } catch (err) {
+                console.error('Error examining cement plant source features:', err);
+              }
+            }
+          });
+          
+          console.log("Added cement plants layer with source-layer: '4ffuy21y'");
+        } catch (error) {
+          console.error("Failed to add cement plants layer:", error);
+        }
+
+        // Add material recovery facilities layer
+        try {
+          map.current.addLayer({
+            id: 'mrf-layer',
+            type: 'circle',
+            source: 'mrf-source',
+            'source-layer': 'us_mrf_pts-206gpg', // Correct source layer name
+            paint: {
+              'circle-color': '#20B2AA', // Light sea green color for MRF facilities
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.mrf ? 'visible' : 'none'
+            }
+          });
+          
+          // Log the available properties in the first feature for debugging
+          map.current.on('sourcedata', function(e) {
+            if (e.sourceId === 'mrf-source' && e.isSourceLoaded) {
+              try {
+                // Try to get features from the source
+                const features = map.current.querySourceFeatures('mrf-source', {
+                  sourceLayer: 'us_mrf_pts-206gpg'
+                });
+                
+                if (features && features.length > 0) {
+                  console.log('Sample MRF feature properties:', features[0].properties);
+                  
+                  // Remove this event handler after it runs once
+                  map.current.off('sourcedata');
+                }
+              } catch (err) {
+                console.error('Error examining MRF source features:', err);
+              }
+            }
+          });
+          
+          console.log("Added material recovery facilities layer");
+        } catch (error) {
+          console.error("Failed to add material recovery facilities layer:", error);
+        }
 
         // Add biodiesel plants layer with correct source layer
         try {
@@ -1136,6 +1561,11 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
               );
             };
 
+            // Helper function to format numbers with commas
+            const formatNumberWithCommas = (num) => {
+              return num.toLocaleString('en-US');
+            };
+
             // Define keys to *include* in the popup and their display order
             const includedKeys = ['main_crop_name', 'acres', 'county', 'region', 'hydro_region']; // Reordered
 
@@ -1158,11 +1588,218 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
               }
             }
 
+            // Calculate crop residue yields using the same methodology as in SitingInventory.tsx
+            const cropName = properties.main_crop_name;
+            const acres = parseFloat(properties.acres) || 0;
+            
+            // Import crop residue factor mappings from constants
+            const CROP_NAME_MAPPING = {
+              // Orchard and Vineyard crops
+              "Apples": "Apples",
+              "Apricots": "Apricots",
+              "Avocados": "Avocados",
+              "Cherries": "Cherries",
+              "Dates": "Dates",
+              "Figs": "Figs",
+              "Grapes": "Grapes",
+              "Kiwis": "Kiwifruit",
+              "Nectarines": "Nectarines",
+              "Olives": "Olives",
+              "Peaches/Nectarines": "Peaches",
+              "Pears": "Pears",
+              "Persimmons": "Persimmons",
+              "Plums": "Plums & Prunes",
+              "Prunes": "Plums & Prunes",
+              "Pomegranates": "Pomegranates",
+              "Citrus and Subtropical": "All Citrus",
+              "Miscellaneous Subtropical Fruits": "All Citrus",
+              "Almonds": "Almonds",
+              "Pecans": "Pecans",
+              "Pistachios": "Pistachios",
+              "Walnuts": "Walnuts",
+              "Miscellaneous Deciduous": "Fruits & Nuts unsp.",
+              
+              // Row crops
+              "Artichokes": "Artichokes",
+              "Asparagus": "Asparagus",
+              "Bush Berries": "Berries",
+              "Beans (Dry)": "Beans",
+              "Lima Beans": "Lima Beans",
+              "Green Lima Beans": "Green Lima Beans",
+              "Broccoli": "Broccoli",
+              "Cabbage": "Cabbage",
+              "Cole Crops": "Cabbage",
+              "Melons, Squash and Cucumbers": "Combined Melons",
+              "Carrots": "Carrots",
+              "Cauliflower": "Cauliflower",
+              "Celery": "Celery",
+              "Cucumbers": "Cucumbers",
+              "Garlic": "Garlic",
+              "Lettuce/Leafy Greens": "Lettuce and Romaine",
+              "Onions and Garlic": "Dry Onions",
+              "Peppers": "Hot Peppers",
+              "Sweet Peppers": "Sweet Peppers",
+              "Spinach": "Spinach",
+              "Squash": "Squash",
+              "Sweet Corn": "Sweet Corn",
+              "Tomatoes": "Tomatoes",
+              "Potatoes": "Potatoes",
+              "Sweet Potatoes": "Sweet Potatos",
+              "Sugar beets": "Sugar Beets",
+              "Miscellaneous Truck Crops": "Unsp. vegetables",
+              
+              // Field crops
+              "Corn, Sorghum and Sudan": "Corn",
+              "Sorghum": "Sorghum",
+              "Wheat": "Wheat",
+              "Barley": "Barley",
+              "Oats": "Oats",
+              "Rice": "Rice",
+              "Wild Rice": "Rice",
+              "Safflower": "Safflower",
+              "Sunflowers": "Sunflower",
+              "Cotton": "Cotton",
+              "Alfalfa & Alfalfa Mixtures": "Alfalfa",
+              "Miscellaneous Field Crops": "Unsp. Field & Seed",
+              "Miscellaneous Grain and Hay": "Unsp. Field & Seed",
+              "Miscellaneous Grasses": "Bermuda Grass Seed"
+            };
+
+            // Orchard and Vineyard Residues
+            const ORCHARD_VINEYARD_RESIDUES = {
+              "Apples": { wetTonsPerAcre: 1.9, moistureContent: 0.4, dryTonsPerAcre: 1.2 },
+              "Apricots": { wetTonsPerAcre: 2.5, moistureContent: 0.4, dryTonsPerAcre: 1.5 },
+              "Avocados": { wetTonsPerAcre: 1.5, moistureContent: 0.4, dryTonsPerAcre: 0.9 },
+              "Cherries": { wetTonsPerAcre: 2.1, moistureContent: 0.4, dryTonsPerAcre: 1.2 },
+              "Dates": { wetTonsPerAcre: 0.6, moistureContent: 0.43, dryTonsPerAcre: 0.3 },
+              "Figs": { wetTonsPerAcre: 2.2, moistureContent: 0.43, dryTonsPerAcre: 1.3 },
+              "Grapes": { wetTonsPerAcre: 2.0, moistureContent: 0.45, dryTonsPerAcre: 1.1 },
+              "Kiwifruit": { wetTonsPerAcre: 2.0, moistureContent: 0.45, dryTonsPerAcre: 1.1 },
+              "Nectarines": { wetTonsPerAcre: 1.6, moistureContent: 0.43, dryTonsPerAcre: 0.9 },
+              "Olives": { wetTonsPerAcre: 1.1, moistureContent: 0.43, dryTonsPerAcre: 0.7 },
+              "Peaches": { wetTonsPerAcre: 2.3, moistureContent: 0.43, dryTonsPerAcre: 1.3 },
+              "Pears": { wetTonsPerAcre: 2.3, moistureContent: 0.4, dryTonsPerAcre: 1.4 },
+              "Persimmons": { wetTonsPerAcre: 1.6, moistureContent: 0.43, dryTonsPerAcre: 0.9 },
+              "Plums & Prunes": { wetTonsPerAcre: 1.5, moistureContent: 0.43, dryTonsPerAcre: 0.9 },
+              "Pomegranates": { wetTonsPerAcre: 1.6, moistureContent: 0.43, dryTonsPerAcre: 0.9 },
+              "All Citrus": { wetTonsPerAcre: 2.5, moistureContent: 0.4, dryTonsPerAcre: 1.5 },
+              "Almonds": { wetTonsPerAcre: 2.5, moistureContent: 0.4, dryTonsPerAcre: 1.5 },
+              "Pecans": { wetTonsPerAcre: 1.6, moistureContent: 0.4, dryTonsPerAcre: 1.0 },
+              "Pistachios": { wetTonsPerAcre: 1.0, moistureContent: 0.43, dryTonsPerAcre: 0.6 },
+              "Walnuts": { wetTonsPerAcre: 1.0, moistureContent: 0.43, dryTonsPerAcre: 0.6 },
+              "Fruits & Nuts unsp.": { wetTonsPerAcre: 1.6, moistureContent: 0.5, dryTonsPerAcre: 0.8 }
+            };
+
+            // Row Crop Residues
+            const ROW_CROP_RESIDUES = {
+              "Artichokes": { residueType: "Top Silage", wetTonsPerAcre: 1.7, moistureContent: 0.73, dryTonsPerAcre: 0.5 },
+              "Asparagus": { residueType: "", wetTonsPerAcre: 2.2, moistureContent: 0.8, dryTonsPerAcre: 0.4 },
+              "Green Lima Beans": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Berries": { residueType: "Prunings and Leaves", wetTonsPerAcre: 1.3, moistureContent: 0.4, dryTonsPerAcre: 0.8 },
+              "Snap Beans": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Broccoli": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Cabbage": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Combined Melons": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.2, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Carrots": { residueType: "Top Silage", wetTonsPerAcre: 1.0, moistureContent: 0.84, dryTonsPerAcre: 0.2 },
+              "Cauliflower": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Celery": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Cucumbers": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.7, moistureContent: 0.8, dryTonsPerAcre: 0.3 },
+              "Garlic": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.73, dryTonsPerAcre: 0.3 },
+              "Lettuce and Romaine": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Dry Onions": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.73, dryTonsPerAcre: 0.3 },
+              "Green Onions": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.73, dryTonsPerAcre: 0.3 },
+              "Hot Peppers": { residueType: "Stems & Leaf Meal", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Sweet Peppers": { residueType: "Stems & Leaf Meal", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Spinach": { residueType: "", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Squash": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.2, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Sweet Corn": { residueType: "Stover", wetTonsPerAcre: 4.7, moistureContent: 0.2, dryTonsPerAcre: 3.8 },
+              "Tomatoes": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.3, moistureContent: 0.8, dryTonsPerAcre: 0.3 },
+              "Unsp. vegetables": { residueType: "", wetTonsPerAcre: 1.4, moistureContent: 0.8, dryTonsPerAcre: 0.3 },
+              "Potatoes": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.2, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Sweet Potatos": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.2, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Sugar Beets": { residueType: "Top Silage", wetTonsPerAcre: 2.4, moistureContent: 0.75, dryTonsPerAcre: 0.6 }
+            };
+
+            // Field Crop Residues
+            const FIELD_CROP_RESIDUES = {
+              "Corn": { residueType: "Stover", wetTonsPerAcre: 2.9, moistureContent: 0.2, dryTonsPerAcre: 2.3 },
+              "Sorghum": { residueType: "Stover", wetTonsPerAcre: 2.2, moistureContent: 0.2, dryTonsPerAcre: 1.8 },
+              "Wheat": { residueType: "Straw & Stubble", wetTonsPerAcre: 1.2, moistureContent: 0.14, dryTonsPerAcre: 1.0 },
+              "Barley": { residueType: "Straw & Stubble", wetTonsPerAcre: 0.9, moistureContent: 0.15, dryTonsPerAcre: 0.7 },
+              "Oats": { residueType: "Straw & Stubble", wetTonsPerAcre: 0.5, moistureContent: 0.15, dryTonsPerAcre: 0.4 },
+              "Rice": { residueType: "Straw", wetTonsPerAcre: 1.8, moistureContent: 0.14, dryTonsPerAcre: 1.6 },
+              "Safflower": { residueType: "Straw & Stubble", wetTonsPerAcre: 0.9, moistureContent: 0.14, dryTonsPerAcre: 0.8 },
+              "Sunflower": { residueType: "Straw & Stubble", wetTonsPerAcre: 0.9, moistureContent: 0.14, dryTonsPerAcre: 0.8 },
+              "Cotton": { residueType: "Straw & Stubble", wetTonsPerAcre: 1.5, moistureContent: 0.14, dryTonsPerAcre: 1.3 },
+              "Beans": { residueType: "vines and leaves", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Lima Beans": { residueType: "Vines and Leaves", wetTonsPerAcre: 1.0, moistureContent: 0.8, dryTonsPerAcre: 0.2 },
+              "Alfalfa": { residueType: "Stems & Leaf Meal", wetTonsPerAcre: 1.0, moistureContent: 0.11, dryTonsPerAcre: 0.9 },
+              "Bermuda Grass Seed": { residueType: "Grass", wetTonsPerAcre: 1.0, moistureContent: 0.6, dryTonsPerAcre: 0.4 },
+              "Unsp. Field & Seed": { residueType: "Stubble", wetTonsPerAcre: 1.0, moistureContent: 0.14, dryTonsPerAcre: 0.86 }
+            };
+
+            // Function to get crop residue factors
+            const getCropResidueFactors = (cropName) => {
+              // Get the standardized crop name from mapping
+              const standardizedName = CROP_NAME_MAPPING[cropName] || null;
+              
+              if (!standardizedName) {
+                return null;
+              }
+              
+              // Check each residue category
+              if (ORCHARD_VINEYARD_RESIDUES[standardizedName]) {
+                return {
+                  ...ORCHARD_VINEYARD_RESIDUES[standardizedName],
+                  category: 'Orchard and Vineyard',
+                  residueType: 'Prunings'
+                };
+              }
+              
+              if (ROW_CROP_RESIDUES[standardizedName]) {
+                return {
+                  ...ROW_CROP_RESIDUES[standardizedName],
+                  category: 'Row Crop'
+                };
+              }
+              
+              if (FIELD_CROP_RESIDUES[standardizedName]) {
+                return {
+                  ...FIELD_CROP_RESIDUES[standardizedName],
+                  category: 'Field Crop'
+                };
+              }
+              
+              return null;
+            };
+
+            // Calculate residue yields
+            let residueSection = '';
+            const residueFactors = getCropResidueFactors(cropName);
+            
+            if (residueFactors) {
+              // Calculate total residue amounts based on the harvested area (acres)
+              const dryResidueYield = Math.round(acres * residueFactors.dryTonsPerAcre);
+              const wetResidueYield = Math.round(acres * residueFactors.wetTonsPerAcre);
+              const residueType = residueFactors.residueType || 'Residue';
+              
+              // Add residue information to the popup
+              residueSection = `
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eaeaea;">
+                  <h5 style="font-size: 0.95em; font-weight: bold; margin: 0 0 5px 0;">Annual Crop Residue Estimates</h5>
+                  <div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">Residue Type:</strong> ${residueType}</div>
+                  <div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">Wet Tonnage:</strong> ${formatNumberWithCommas(wetResidueYield)} tons/year</div>
+                  <div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">Dry Tonnage:</strong> ${formatNumberWithCommas(dryResidueYield)} tons/year</div>
+                </div>
+              `;
+            }
+
             // Increase right padding for close button spacing, remove table
             const popupHTML = `
-              <div style="max-height: 250px; overflow-y: auto; padding: 5px 15px 5px 5px; font-size: 0.9em;">
+              <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
                 <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Crop Residues Details</h4>
                 ${contentLines}
+                ${residueSection}
               </div>
             `;
 
@@ -1173,7 +1810,12 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             }
             
             // Create new popup and store reference
-            currentPopup.current = new mapboxgl.Popup({ closeButton: true, closeOnClick: true, maxWidth: '300px' }) // Added maxWidth
+            currentPopup.current = new mapboxgl.Popup({ 
+                closeButton: true, 
+                closeOnClick: true, 
+                maxWidth: '350px',
+                className: 'crop-residue-popup' // Add custom class for additional styling
+              })
               .setLngLat(coordinates)
               .setHTML(popupHTML)
               .addTo(map.current);
@@ -1187,6 +1829,366 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             console.log('Displayed formatted popup for feature:', properties);
           }
         });
+
+                  // --- Add Click Listener for Biorefineries Layer (Display Properties) ---
+          map.current.on('click', 'biorefineries-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Biorefinery Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for biorefinery:', properties);
+            }
+          });
+          
+          // --- Add Click Listener for SAF Plants Layer (Display Properties) ---
+          map.current.on('click', 'saf-plants-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Sustainable Aviation Fuel Plant Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for SAF plant:', properties);
+            }
+          });
+          
+          // --- Add Click Listener for Renewable Diesel Plants Layer (Display Properties) ---
+          map.current.on('click', 'renewable-diesel-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Renewable Diesel Plant Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for Renewable Diesel plant:', properties);
+            }
+          });
+          
+          // --- Add Click Listener for Cement Plants Layer (Display Properties) ---
+          map.current.on('click', 'cement-plants-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Cement Plant Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for Cement Plant:', properties);
+            }
+          });
+          
+          // --- Add Click Listener for Material Recovery Facilities Layer (Display Properties) ---
+          map.current.on('click', 'mrf-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Material Recovery Facility Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for Material Recovery Facility:', properties);
+            }
+          });
 
       }); // Closing bracket for map.current.on('load', ...)
 
@@ -1219,7 +2221,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       // Clean up buffer reference
       currentBuffer.current = null;
     };
-  }, [layerVisibility]); // Remove sitingMode from dependencies to prevent map re-initialization
+  }, []); // Empty dependency array to initialize map only once
 
   // Effect to update the buffer when radius or unit changes
   useEffect(() => {
@@ -1377,6 +2379,71 @@ useEffect(() => {
     map.current.setLayoutProperty('biodiesel-plants-layer', 'visibility', visibility);
 
   }, [mapLoaded, layerVisibility?.biodieselPlants]); // Depend on mapLoaded and the specific layerVisibility property
+
+  // Effect for controlling biorefineries layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('biorefineries-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isBiorefinariesVisible = layerVisibility?.biorefineries || false;
+    const visibility = isBiorefinariesVisible ? 'visible' : 'none';
+    console.log(`Setting biorefineries layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('biorefineries-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.biorefineries]); // Depend on mapLoaded and the specific layerVisibility property
+
+  // Effect for controlling Cement Plants layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('cement-plants-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isCementPlantsVisible = layerVisibility?.cementPlants || false;
+    const visibility = isCementPlantsVisible ? 'visible' : 'none';
+    console.log(`Setting Cement Plants layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('cement-plants-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.cementPlants]); // Depend on mapLoaded and the specific layerVisibility property
+
+  // Effect for controlling Material Recovery Facilities layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('mrf-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isMrfVisible = layerVisibility?.mrf || false;
+    const visibility = isMrfVisible ? 'visible' : 'none';
+    console.log(`Setting Material Recovery Facilities layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('mrf-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.mrf]); // Depend on mapLoaded and the specific layerVisibility property
+
+  // Effect for controlling SAF plants layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('saf-plants-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isSafPlantsVisible = layerVisibility?.safPlants || false;
+    const visibility = isSafPlantsVisible ? 'visible' : 'none';
+    console.log(`Setting SAF plants layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('saf-plants-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.safPlants]); // Depend on mapLoaded and the specific layerVisibility property
+
+  // Effect for controlling renewable diesel plants layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('renewable-diesel-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isRenewableDieselVisible = layerVisibility?.renewableDiesel || false;
+    const visibility = isRenewableDieselVisible ? 'visible' : 'none';
+    console.log(`Setting renewable diesel plants layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('renewable-diesel-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.renewableDiesel]); // Depend on mapLoaded and the specific layerVisibility property
 
   // Define validateBufferState function before it's used in dependency arrays
   const validateBufferState = useCallback(() => {

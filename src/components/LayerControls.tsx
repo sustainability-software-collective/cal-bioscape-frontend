@@ -19,6 +19,12 @@ import {
  TooltipProvider,
  TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { 
+  ORCHARD_VINEYARD_RESIDUES, 
+  ROW_CROP_RESIDUES, 
+  FIELD_CROP_RESIDUES, 
+  CROP_NAME_MAPPING 
+} from '@/lib/constants';
 
 // Define the props interface
 interface LayerControlsProps {
@@ -103,6 +109,77 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   // Helper function to handle month range change
   const handleMonthRangeChange = (value: [number, number]) => {
     setMonthRange(value);
+    // Apply seasonal filtering when month range changes
+    applySeasonalFilter(value);
+  };
+  
+  // Define type for month abbreviations
+  type MonthAbbr = 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec';
+  
+  // Helper function to get month abbreviation from index
+  const getMonthAbbr = (index: number): MonthAbbr => {
+    const monthAbbrs: MonthAbbr[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return monthAbbrs[index];
+  };
+  
+  // Function to check if a crop is available in the selected month range
+  const isCropAvailableInRange = (cropName: string, range: [number, number]): boolean => {
+    // Get standardized crop name
+    const standardizedName = CROP_NAME_MAPPING[cropName as keyof typeof CROP_NAME_MAPPING];
+    if (!standardizedName) return true; // If not found, assume always available
+    
+    // Find the crop in the residue tables
+    let seasonalData;
+    if (standardizedName in ORCHARD_VINEYARD_RESIDUES) {
+      seasonalData = ORCHARD_VINEYARD_RESIDUES[standardizedName as keyof typeof ORCHARD_VINEYARD_RESIDUES].seasonalAvailability;
+    } else if (standardizedName in ROW_CROP_RESIDUES) {
+      seasonalData = ROW_CROP_RESIDUES[standardizedName as keyof typeof ROW_CROP_RESIDUES].seasonalAvailability;
+    } else if (standardizedName in FIELD_CROP_RESIDUES) {
+      seasonalData = FIELD_CROP_RESIDUES[standardizedName as keyof typeof FIELD_CROP_RESIDUES].seasonalAvailability;
+    }
+    
+    if (!seasonalData) return true; // If no seasonal data, assume always available
+    
+    // Check if crop is available in any month within the selected range
+    const [startMonth, endMonth] = range;
+    
+    // Handle cases where the range wraps around (e.g., Nov-Feb)
+    if (startMonth <= endMonth) {
+      // Normal range (e.g., Mar-Jul)
+      for (let i = startMonth; i <= endMonth; i++) {
+        if (seasonalData[getMonthAbbr(i)]) return true;
+      }
+    } else {
+      // Wrapped range (e.g., Nov-Feb)
+      // Check from start to December
+      for (let i = startMonth; i < 12; i++) {
+        if (seasonalData[getMonthAbbr(i)]) return true;
+      }
+      // Check from January to end
+      for (let i = 0; i <= endMonth; i++) {
+        if (seasonalData[getMonthAbbr(i)]) return true;
+      }
+    }
+    
+    return false; // Not available in any month within range
+  };
+  
+  // Function to apply seasonal filter based on month range
+  const applySeasonalFilter = (range: [number, number]) => {
+    setCropVisibility(prev => {
+      const newState = { ...prev };
+      
+      // Update visibility for each crop based on seasonal availability
+      allCropNames.forEach(cropName => {
+        newState[cropName] = isCropAvailableInRange(cropName, range);
+      });
+      
+      // Notify parent of changes
+      const visibleCrops = Object.keys(newState).filter(name => newState[name]);
+      onCropFilterChange(visibleCrops);
+      
+      return newState;
+    });
   };
 
   // --- Crop filtering logic ---
@@ -126,11 +203,20 @@ const LayerControls: React.FC<LayerControlsProps> = ({
     const visibleCrops = allCropNames.filter(name => cropVisibility[name]);
     onCropFilterChange(visibleCrops);
   }, [allCropNames, cropVisibility, onCropFilterChange]); // Added missing dependencies
+  
+  // Apply seasonal filter when component mounts
+  useEffect(() => {
+    applySeasonalFilter(monthRange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSelectAllCrops = () => {
     setCropVisibility(prev => {
       const newState = { ...prev };
-      allCropNames.forEach(name => newState[name] = true);
+      // Only select crops that are available in the current month range
+      allCropNames.forEach(name => {
+        newState[name] = isCropAvailableInRange(name, monthRange);
+      });
       return newState;
     });
   };
@@ -278,7 +364,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                       checked={infrastructureMaster}
                       onCheckedChange={(checked: boolean | 'indeterminate') => onInfrastructureToggle(!!checked)}
                     />
-                    <Label htmlFor="infrastructureLayer" className="font-medium">Infrastructure</Label>
+                    <Label htmlFor="infrastructureLayer" className="font-medium text-sm">Infrastructure</Label>
                   </div>
                   <button
                     onClick={() => setIsInfrastructureCollapsed(!isInfrastructureCollapsed)}
@@ -298,7 +384,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         checked={initialVisibility?.anaerobicDigester ?? false}
                         onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('anaerobicDigester', !!checked)}
                       />
-                      <Label htmlFor="anaerobicDigesterLayer" className="flex items-center">
+                      <Label htmlFor="anaerobicDigesterLayer" className="flex items-center text-xs">
                         <span
                           style={{
                             display: 'inline-block',
@@ -314,6 +400,121 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                       </Label>
                     </div>
                     
+                    {/* Biorefineries Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="biorefineries"
+                        checked={initialVisibility?.biorefineries ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('biorefineries', !!checked)}
+                      />
+                      <Label htmlFor="biorefineries" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#9370DB',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Ethanol Biorefineries
+                      </Label>
+                    </div>
+                    
+                    {/* SAF Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="safPlants"
+                        checked={initialVisibility?.safPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('safPlants', !!checked)}
+                      />
+                      <Label htmlFor="safPlants" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#1E90FF',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Sustainable Aviation Fuel Plants
+                      </Label>
+                    </div>
+                    
+                    {/* Renewable Diesel Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="renewableDiesel"
+                        checked={initialVisibility?.renewableDiesel ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('renewableDiesel', !!checked)}
+                      />
+                      <Label htmlFor="renewableDiesel" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#FF8C00',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Renewable Diesel Plants
+                      </Label>
+                    </div>
+                    
+                    {/* Material Recovery Facilities Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="mrf"
+                        checked={initialVisibility?.mrf ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('mrf', !!checked)}
+                      />
+                      <Label htmlFor="mrf" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#20B2AA',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Material Recovery Facilities
+                      </Label>
+                    </div>
+                    
+                    {/* Cement Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="cementPlants"
+                        checked={initialVisibility?.cementPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('cementPlants', !!checked)}
+                      />
+                      <Label htmlFor="cementPlants" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#708090',
+                            borderRadius: '50%',
+                            marginRight: '4px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Cement Plants
+                      </Label>
+                    </div>
+                    
                     {/* Biodiesel Plants Layer Toggle - Under Infrastructure */}
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
@@ -321,7 +522,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         checked={initialVisibility?.biodieselPlants ?? false}
                         onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('biodieselPlants', !!checked)}
                       />
-                      <Label htmlFor="biodieselPlantsLayer" className="flex items-center">
+                      <Label htmlFor="biodieselPlantsLayer" className="flex items-center text-xs">
                         <span
                           style={{
                             display: 'inline-block',
@@ -349,7 +550,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                       checked={transportationMaster}
                       onCheckedChange={(checked: boolean | 'indeterminate') => onTransportationToggle(!!checked)}
                     />
-                    <Label htmlFor="transportationLayer" className="font-medium">Transportation</Label>
+                    <Label htmlFor="transportationLayer" className="font-medium text-sm">Transportation</Label>
                   </div>
                   <button
                     onClick={() => setIsTransportationCollapsed(!isTransportationCollapsed)}
@@ -369,17 +570,18 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         checked={initialVisibility?.railLines ?? false}
                         onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('railLines', !!checked)}
                       />
-                      <Label htmlFor="railLinesLayer" className="flex items-center">
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            width: '16px',
-                            height: '3px',
-                            backgroundColor: '#FF4500',
-                            marginRight: '4px',
-                            flexShrink: 0,
-                          }}
-                        ></span>
+                      <Label htmlFor="railLinesLayer" className="flex items-center text-xs">
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '16px',
+                              height: '3px',
+                              backgroundColor: '#FF4500',
+                              flexShrink: 0,
+                            }}
+                          ></span>
+                        </div>
                         Rail Lines
                       </Label>
                     </div>
@@ -391,18 +593,19 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         checked={initialVisibility?.freightTerminals ?? false}
                         onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('freightTerminals', !!checked)}
                       />
-                      <Label htmlFor="freightTerminalsLayer" className="flex items-center">
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            width: '12px',
-                            height: '12px',
-                            backgroundColor: '#4169E1',
-                            borderRadius: '50%',
-                            marginRight: '4px',
-                            flexShrink: 0,
-                          }}
-                        ></span>
+                      <Label htmlFor="freightTerminalsLayer" className="flex items-center text-xs">
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '12px',
+                              height: '12px',
+                              backgroundColor: '#4169E1',
+                              borderRadius: '50%',
+                              flexShrink: 0,
+                            }}
+                          ></span>
+                        </div>
                         Freight Terminals
                       </Label>
                     </div>
@@ -414,17 +617,18 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         checked={initialVisibility?.freightRoutes ?? false}
                         onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('freightRoutes', !!checked)}
                       />
-                      <Label htmlFor="freightRoutesLayer" className="flex items-center">
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            width: '16px',
-                            height: '3px',
-                            backgroundColor: '#9932CC',
-                            marginRight: '4px',
-                            flexShrink: 0,
-                          }}
-                        ></span>
+                      <Label htmlFor="freightRoutesLayer" className="flex items-center text-xs">
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '16px',
+                              height: '3px',
+                              backgroundColor: '#9932CC',
+                              flexShrink: 0,
+                            }}
+                          ></span>
+                        </div>
                         Freight Routes
                       </Label>
                     </div>
@@ -448,7 +652,21 @@ const LayerControls: React.FC<LayerControlsProps> = ({
               {/* Month Range Slider for Feedstock Availability */}
               <div className="space-y-3">
                 <div className="px-2">
-                  <Label className="text-sm font-medium">Feedstock Availability</Label>
+                  <Label className="text-sm font-medium flex items-center">
+                    Seasonal Availability
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Info className="h-4 w-4 ml-1 inline-block text-gray-500 cursor-help transition-colors hover:text-gray-700" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <p>Filter crops based on when their residues are seasonally available. Crops will be shown if they are available in at least one month within the selected range.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
                 </div>
                 <div className="px-2">
                   <Slider
@@ -459,11 +677,13 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     onValueChange={handleMonthRangeChange}
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-500 mt-2">
-                    {monthRange[0] === monthRange[1] 
-                      ? getMonthName(monthRange[0])
-                      : `${getMonthName(monthRange[0])} - ${getMonthName(monthRange[1])} (inclusive)`
-                    }
+                  <div className="mt-2">
+                    <div className="text-xs text-blue-600 text-center">
+                      {monthRange[0] === monthRange[1] 
+                        ? getMonthName(monthRange[0])
+                        : `${getMonthName(monthRange[0])} to ${getMonthName(monthRange[1])} (inclusive)`
+                      }
+                    </div>
                   </div>
                 </div>
               </div>

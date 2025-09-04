@@ -91,8 +91,8 @@ const SitingInventory: React.FC<SitingInventoryProps> = ({
       'Crop Type': crop.name,
       'Acres': Math.round(crop.acres),
       'Percentage': Math.round((crop.acres / totalAcres) * 100) + '%',
-      'Dry Residue (tons)': crop.dryResidueYield,
-      'Wet Residue (tons)': crop.wetResidueYield
+      'Dry Residue (tons/year)': crop.dryResidueYield,
+      'Wet Residue (tons/year)': crop.wetResidueYield
     }));
     
     // Add a total row
@@ -100,8 +100,8 @@ const SitingInventory: React.FC<SitingInventoryProps> = ({
       'Crop Type': 'Total',
       'Acres': Math.round(totalAcres),
       'Percentage': '100%',
-      'Dry Residue (tons)': Math.round(totalDryResidue),
-      'Wet Residue (tons)': Math.round(totalWetResidue)
+      'Dry Residue (tons/year)': Math.round(totalDryResidue),
+      'Wet Residue (tons/year)': Math.round(totalWetResidue)
     });
     
     // Create metadata for the CSV
@@ -184,8 +184,10 @@ return (
               </span>
             </div>
             <div className="mt-1 grid grid-cols-2 justify-between">
-              <p className="font-normal text-sm">Total Dry Residue: {formatNumberWithCommas(Math.round(totalDryResidue))} tons</p>
-              <p className="font-normal text-sm text-right">Total Wet Residue: {formatNumberWithCommas(Math.round(totalWetResidue))} tons</p>
+              <p className="font-normal text-sm">Total Dry Residue: {formatNumberWithCommas(Math.round(totalDryResidue))} tons/year</p>
+              <p className="font-normal text-sm text-right">Total Wet Residue: {formatNumberWithCommas(Math.round(totalWetResidue))} tons/year</p>
+            </div>
+            <div className="mt-1">
             </div>
           </div>
 
@@ -197,8 +199,8 @@ return (
                     <th className="py-2 px-3 text-left font-medium text-gray-500 w-[30%]">Crop Type</th>
                     <th className="py-2 px-2 text-right font-medium text-gray-500 w-[15%]">Acres</th>
                     <th className="py-2 px-2 text-right font-medium text-gray-500 w-[13%]">% of Area</th>
-                    <th className="py-2 px-2 text-right font-medium text-gray-500 w-[21%]">Dry Residue (tons)</th>
-                    <th className="py-2 px-2 text-right font-medium text-gray-500 w-[21%]">Wet Residue (tons)</th>
+                    <th className="py-2 px-2 text-right font-medium text-gray-500 w-[21%]">Dry Residue (tons/year)</th>
+                    <th className="py-2 px-2 text-right font-medium text-gray-500 w-[21%]">Wet Residue (tons/year)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -246,7 +248,8 @@ return (
           )}
           
           <div className="text-xs text-gray-500 border-t pt-3 mt-1">
-            <p className="mb-1">This inventory shows crop residues available within the selected buffer zone, calculated based on <a href="https://www.sciencedirect.com/science/article/abs/pii/S0921344918303148" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">established crop residue yield factors</a>.</p>
+            <p className="mb-1">This inventory shows annual crop residues available within the selected buffer zone, calculated based on <a href="https://www.sciencedirect.com/science/article/abs/pii/S0921344918303148" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">established crop residue yield factors</a>. 
+            </p>
             <div className="flex justify-between items-center">
               <button 
                 onClick={handleExportCSV} 

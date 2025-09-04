@@ -11,7 +11,20 @@ import { ChevronLeft, ChevronRight, Layers, Filter } from 'lucide-react';
 // Removed fetcher function
 export default function Home() {
   // State for layer visibility
-  const [layerVisibility, setLayerVisibility] = useState<{ [key: string]: boolean }>({ feedstock: true, transportation: false, railLines: false, anaerobicDigester: false, biodieselPlants: false, freightTerminals: false, freightRoutes: false }); // Added freightRoutes layer
+  const [layerVisibility, setLayerVisibility] = useState<{ [key: string]: boolean }>({ 
+    feedstock: true, 
+    transportation: false, 
+    railLines: false, 
+    anaerobicDigester: false, 
+    biodieselPlants: false, 
+    freightTerminals: false, 
+    freightRoutes: false,
+    biorefineries: false,
+    safPlants: false,
+    renewableDiesel: false,
+    mrf: false,
+    cementPlants: false
+  }); // Added all new layers
 
   // State for panel collapse
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
@@ -35,8 +48,23 @@ export default function Home() {
 
   // Computed values for parent checkbox states based on child layer visibility
   const computedInfrastructureMaster = useMemo(() => {
-    return layerVisibility.anaerobicDigester || layerVisibility.biodieselPlants || false;
-  }, [layerVisibility.anaerobicDigester, layerVisibility.biodieselPlants]);
+    return layerVisibility.anaerobicDigester || 
+           layerVisibility.biodieselPlants || 
+           layerVisibility.biorefineries || 
+           layerVisibility.safPlants || 
+           layerVisibility.renewableDiesel || 
+           layerVisibility.mrf || 
+           layerVisibility.cementPlants || 
+           false;
+  }, [
+    layerVisibility.anaerobicDigester, 
+    layerVisibility.biodieselPlants, 
+    layerVisibility.biorefineries,
+    layerVisibility.safPlants,
+    layerVisibility.renewableDiesel,
+    layerVisibility.mrf,
+    layerVisibility.cementPlants
+  ]);
 
   const computedTransportationMaster = useMemo(() => {
     return layerVisibility.railLines || layerVisibility.freightTerminals || layerVisibility.freightRoutes || false;
@@ -83,13 +111,15 @@ export default function Home() {
 
   // Handler for infrastructure master toggle
   const handleInfrastructureToggle = (isVisible: boolean) => {
-    // setInfrastructureMaster(isVisible); // Removed
     setLayerVisibility(prev => ({
       ...prev,
       anaerobicDigester: isVisible, // Toggle anaerobic digester layer with infrastructure
       biodieselPlants: isVisible, // Toggle biodiesel plants layer with infrastructure
-      // railLines: isVisible, // Moved to transportation section
-      // Add future infrastructure sublayers here (e.g., facility points)
+      biorefineries: isVisible, // Toggle ethanol biorefineries layer with infrastructure
+      safPlants: isVisible, // Toggle SAF plants layer with infrastructure
+      renewableDiesel: isVisible, // Toggle renewable diesel plants layer with infrastructure
+      mrf: isVisible, // Toggle material recovery facilities layer with infrastructure
+      cementPlants: isVisible, // Toggle cement plants layer with infrastructure
     }));
     console.log(`Toggled infrastructure master to ${isVisible}, infrastructure layers set to ${isVisible}`);
   };
@@ -123,7 +153,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex flex-1 relative w-full h-full overflow-hidden">
         {/* Container for Layer Controls */}
-        <div className={`${isPanelCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 ease-in-out overflow-hidden bg-gray-100 flex-shrink-0`}>
+        <div className={`${isPanelCollapsed ? 'w-0' : 'w-87'} transition-all duration-300 ease-in-out overflow-hidden bg-gray-100 flex-shrink-0`}>
           <div className="p-4 h-full overflow-y-auto">
             <LayerControls
               initialVisibility={layerVisibility}
@@ -167,7 +197,7 @@ export default function Home() {
           onClick={togglePanelCollapse}
           className="absolute top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 ease-in-out"
           style={{ 
-            left: isPanelCollapsed ? '8px' : '304px'
+            left: isPanelCollapsed ? '8px' : '364px'
           }}
         >
           {isPanelCollapsed ? (
