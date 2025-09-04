@@ -1,6 +1,6 @@
 'use client'; // Needed because LayerControls uses useState
 
-import { useState, useMemo, useCallback } from 'react'; // Added useCallback
+import { useState, useMemo, useCallback, useEffect } from 'react'; // Added useEffect
 import dynamic from 'next/dynamic';
 // Removed useSWRInfinite import
 const Map = dynamic(() => import('@/components/Map'), { ssr: false });
@@ -15,6 +15,23 @@ export default function Home() {
 
   // State for panel collapse
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+
+  // Effect to dispatch resize event when panel collapses/expands
+  useEffect(() => {
+    // Wait for the panel transition to complete
+    const timeoutId = setTimeout(() => {
+      // Dispatch a custom event that will be caught by the resize observer in Map
+      window.dispatchEvent(new Event('resize'));
+      console.log('Dispatched resize event after panel state change');
+    }, 350); // Slightly longer than the transition duration (300ms)
+    
+    return () => clearTimeout(timeoutId);
+  }, [isPanelCollapsed]);
+
+  // Toggle panel with appropriate function
+  const togglePanelCollapse = () => {
+    setIsPanelCollapsed(!isPanelCollapsed);
+  };
 
   // Computed values for parent checkbox states based on child layer visibility
   const computedInfrastructureMaster = useMemo(() => {
@@ -104,9 +121,9 @@ export default function Home() {
       <Header />
       
       {/* Main Content */}
-      <main className="flex flex-1 relative">
+      <main className="flex flex-1 relative w-full overflow-hidden">
         {/* Container for Layer Controls */}
-        <div className={`${isPanelCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 ease-in-out overflow-hidden bg-gray-100`}>
+        <div className={`${isPanelCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 ease-in-out overflow-hidden bg-gray-100 flex-shrink-0`}>
           <div className="p-4 h-full overflow-y-auto">
             <LayerControls
               initialVisibility={layerVisibility}
@@ -119,16 +136,15 @@ export default function Home() {
               onTransportationToggle={handleTransportationToggle} // Pass the new handler
               transportationMaster={computedTransportationMaster} // Pass the computed transportation master state
             />
-            {/* Removed feedstockLoading display */}
           </div>
         </div>
 
         {/* Thin Vertical Icon Bar - Only visible when collapsed */}
         {isPanelCollapsed && (
-          <div className="w-12 bg-white border-r border-gray-200 flex flex-col items-center py-4 space-y-6">
+          <div className="w-12 bg-white border-r border-gray-200 flex flex-col items-center py-4 space-y-6 flex-shrink-0">
             {/* Data Layers Icon */}
             <button
-              onClick={() => setIsPanelCollapsed(false)}
+              onClick={togglePanelCollapse}
               className="flex flex-col items-center space-y-1 p-2 rounded-md hover:bg-gray-200 transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 group"
             >
               <Layers className="h-5 w-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-200" />
@@ -137,7 +153,7 @@ export default function Home() {
             
             {/* Filters Icon */}
             <button
-              onClick={() => setIsPanelCollapsed(false)}
+              onClick={togglePanelCollapse}
               className="flex flex-col items-center space-y-1 p-2 rounded-md hover:bg-gray-200 transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 group"
             >
               <Filter className="h-5 w-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-200" />
@@ -148,7 +164,7 @@ export default function Home() {
         
         {/* Toggle Button */}
         <button
-          onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+          onClick={togglePanelCollapse}
           className="absolute top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 ease-in-out"
           style={{ 
             left: isPanelCollapsed ? '8px' : '304px'
@@ -162,16 +178,17 @@ export default function Home() {
         </button>
         
         {/* Container for the Map, taking remaining space and full height */}
-        <div className="flex-grow h-full">
+        <div className="flex-1 h-full w-full">
           {/* Pass fetched data and visibility state to the Map component */}
           <Map
-            // Removed feedstockData prop
             layerVisibility={layerVisibility}
             visibleCrops={visibleCrops} // Pass the visible crops state
             croplandOpacity={croplandOpacity} // Pass opacity state
           />
         </div>
       </main>
+      
+      {/* Footer removed to hide on map page */}
     </div>
   );
 }

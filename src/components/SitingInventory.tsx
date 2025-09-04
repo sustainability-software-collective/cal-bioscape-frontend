@@ -169,8 +169,8 @@ return (
           {/* Sighting Location */}
           {location && (
             <div className="text-xs text-gray-700 bg-gray-50 p-2 rounded-md border">
-              <span className="font-medium text-xs mb-0 mr-2">Site Location (Latitude, Longitude):</span>
-              <span className="font-mono text-sm">
+              <span className="font-mono text-xs mb-0 mr-2">Site Location (Latitude, Longitude):</span>
+              <span className="font-mono text-xs">
                 {location.lat.toFixed(6)},{location.lng.toFixed(6)}
               </span>
             </div>
@@ -248,7 +248,6 @@ return (
           <div className="text-xs text-gray-500 border-t pt-3 mt-1">
             <p className="mb-1">This inventory shows crop residues available within the selected buffer zone, calculated based on <a href="https://www.sciencedirect.com/science/article/abs/pii/S0921344918303148" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">established crop residue yield factors</a>.</p>
             <div className="flex justify-between items-center">
-              <p>Click on different map locations to compare resources.</p>
               <button 
                 onClick={handleExportCSV} 
                 className="text-gray-600 hover:text-gray-800 underline text-xs ml-auto"

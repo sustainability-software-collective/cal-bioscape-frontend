@@ -1440,13 +1440,64 @@ useEffect(() => {
 
 // Color mapping definition removed - will be handled in LayerControls
 
+  // Effect for handling container resize
+  useEffect(() => {
+    if (!mapLoaded || !map.current) return;
+    
+    // Create a resize observer to detect container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      if (!map.current) return;
+      
+      // Resize the map with a small delay to ensure the container size is stable
+      setTimeout(() => {
+        console.log('Container resized, triggering map resize');
+        map.current.resize();
+      }, 100);
+    });
+    
+    // Start observing the container for size changes
+    if (mapContainer.current) {
+      resizeObserver.observe(mapContainer.current);
+      console.log('Resize observer attached to map container');
+    }
+    
+    // Also listen for window resize events
+    const handleResize = () => {
+      if (map.current) {
+        setTimeout(() => {
+          console.log('Window resized, triggering map resize');
+          map.current.resize();
+        }, 100);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      // Clean up the observer when the component unmounts
+      if (mapContainer.current) {
+        resizeObserver.unobserve(mapContainer.current);
+        console.log('Resize observer detached from map container');
+      }
+      
+      // Remove window resize listener
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [mapLoaded]);
 
   return (
     // Ensure the container has dimensions and relative positioning for the legend
     <div
       ref={mapContainer}
       className="map-container"
-      style={{ width: '100%', height: '100%', position: 'relative' }} // Added position: relative
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        position: 'relative',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }}
     >
       {/* Show either the button or the panel */}
       {!showSitingPanel ? (

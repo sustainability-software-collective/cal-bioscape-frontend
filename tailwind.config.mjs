@@ -33,7 +33,10 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")], // Add the plugin here
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"), // Add Typography plugin for prose classes
+  ],
 };
 
 export default config;
