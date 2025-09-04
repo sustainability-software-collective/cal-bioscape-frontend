@@ -28,7 +28,9 @@ export default function Home() {
     mrf: false,
     cementPlants: false,
     landfillLfg: false,
-    wastewaterTreatment: false
+    wastewaterTreatment: false,
+    wasteToEnergy: false,
+    combustionPlants: false
   }); // Added all new layers
 
   // State for panel collapse
@@ -61,7 +63,9 @@ export default function Home() {
            layerVisibility.mrf || 
            layerVisibility.cementPlants || 
            layerVisibility.landfillLfg || 
-           layerVisibility.wastewaterTreatment || 
+           layerVisibility.wastewaterTreatment ||
+           layerVisibility.wasteToEnergy ||
+           layerVisibility.combustionPlants ||
            false;
   }, [
     layerVisibility.anaerobicDigester, 
@@ -72,7 +76,9 @@ export default function Home() {
     layerVisibility.mrf,
     layerVisibility.cementPlants,
     layerVisibility.landfillLfg,
-    layerVisibility.wastewaterTreatment
+    layerVisibility.wastewaterTreatment,
+    layerVisibility.wasteToEnergy,
+    layerVisibility.combustionPlants
   ]);
 
   const computedTransportationMaster = useMemo(() => {
@@ -144,6 +150,8 @@ export default function Home() {
       cementPlants: isVisible, // Toggle cement plants layer with infrastructure
       landfillLfg: isVisible, // Toggle landfills with LFG projects layer with infrastructure
       wastewaterTreatment: isVisible, // Toggle wastewater treatment plants layer with infrastructure
+      wasteToEnergy: isVisible,
+      combustionPlants: isVisible
     }));
     console.log(`Toggled infrastructure master to ${isVisible}, infrastructure layers set to ${isVisible}`);
   };
@@ -171,6 +179,28 @@ export default function Home() {
     console.log("Visible crops updated:", newVisibleCrops.length); // Log changes
   }, []); // Empty dependency array: function doesn't depend on component state/props
 
+  // Handler to show all layers
+  const handleShowAllLayers = () => {
+    setLayerVisibility(prev => {
+      const newVisibility = { ...prev };
+      for (const key in newVisibility) {
+        newVisibility[key] = true;
+      }
+      return newVisibility;
+    });
+  };
+
+  // Handler to hide all layers
+  const handleHideAllLayers = () => {
+    setLayerVisibility(prev => {
+      const newVisibility = { ...prev };
+      for (const key in newVisibility) {
+        newVisibility[key] = false;
+      }
+      return newVisibility;
+    });
+  };
+
   // Removed feedstockError check UI
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden no-scroll">
@@ -192,6 +222,8 @@ export default function Home() {
               infrastructureMaster={computedInfrastructureMaster} // Pass the computed infrastructure master state
               onTransportationToggle={handleTransportationToggle} // Pass the new handler
               transportationMaster={computedTransportationMaster} // Pass the computed transportation master state
+              onShowAllLayers={handleShowAllLayers}
+              onHideAllLayers={handleHideAllLayers}
             />
           </div>
         </div>

@@ -182,3 +182,24 @@
   height: 100% !important;
   overflow: hidden !important;
 }
+
+/* Custom styles for layer control buttons */
+.layer-control-button {
+  text-decoration: none !important;
+}
+.layer-control-button:hover {
+  text-decoration: none !important;
+}
+
+/* Remove all underlines from accordion headers */
+[data-slot="accordion-trigger"],
+[data-slot="accordion-trigger"] *,
+[data-slot="accordion-trigger"] *:hover,
+[data-slot="accordion-trigger"] div,
+[data-slot="accordion-trigger"] div:hover,
+[data-slot="accordion-trigger"] span,
+[data-slot="accordion-trigger"] span:hover,
+[data-slot="accordion-trigger"] button,
+[data-slot="accordion-trigger"] button:hover {
+  text-decoration: none !important;
+}

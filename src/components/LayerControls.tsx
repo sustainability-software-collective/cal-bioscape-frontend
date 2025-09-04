@@ -37,6 +37,8 @@ interface LayerControlsProps {
   infrastructureMaster: boolean;
   onTransportationToggle: (isVisible: boolean) => void;
   transportationMaster: boolean;
+  onShowAllLayers: () => void;
+  onHideAllLayers: () => void;
 }
 
 const LayerControls: React.FC<LayerControlsProps> = ({
@@ -49,7 +51,17 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   infrastructureMaster,
   onTransportationToggle,
   transportationMaster,
+  onShowAllLayers,
+  onHideAllLayers,
 }) => {
+  // Local state to track layer visibility within the component
+  // This helps keep UI in sync with actual map layer visibility
+  const [localLayerVisibility, setLocalLayerVisibility] = useState<{ [key: string]: boolean }>(initialVisibility);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalLayerVisibility(initialVisibility);
+  }, [initialVisibility]);
 
   // Define type for the color mapping
   type CropColorMap = { [key: string]: string };
@@ -174,8 +186,32 @@ const LayerControls: React.FC<LayerControlsProps> = ({
         newState[cropName] = isCropAvailableInRange(cropName, range);
       });
       
-      // Notify parent of changes
+      // Get visible crops after applying seasonal filter
       const visibleCrops = Object.keys(newState).filter(name => newState[name]);
+      
+      // Try to directly update the map filter for crop visibility
+      const mapInstance = getMapInstance();
+      if (mapInstance && mapInstance.getLayer('feedstock-vector-layer')) {
+        try {
+          // Make sure the layer is visible if the feedstock layer is enabled and there are visible crops
+          if (visibleCrops.length > 0 && localLayerVisibility.feedstock) {
+            mapInstance.setLayoutProperty('feedstock-vector-layer', 'visibility', 'visible');
+          }
+          
+          // Create a filter that shows only visible crops
+          const visibleCropFilter = ['match', ['get', 'main_crop_name'], visibleCrops, true, false];
+          // Combine with the existing base filter that excludes 'U' code
+          const combinedFilter = ['all', ['!=', ['get', 'main_crop_code'], 'U'], visibleCropFilter];
+          
+          // Apply the filter directly to the map
+          mapInstance.setFilter('feedstock-vector-layer', combinedFilter);
+          console.log(`Directly updated crop filter based on seasonal availability (${visibleCrops.length} crops visible)`);
+        } catch (err) {
+          console.error('Error directly updating crop filter:', err);
+        }
+      }
+      
+      // Always update parent state to keep everything in sync
       onCropFilterChange(visibleCrops);
       
       return newState;
@@ -193,7 +229,32 @@ const LayerControls: React.FC<LayerControlsProps> = ({
     setCropVisibility(prev => {
       const newState = { ...prev, [cropName]: isVisible };
       const visibleCrops = Object.keys(newState).filter(name => newState[name]);
+      
+      // Try to directly update the map filter for crop visibility
+      const mapInstance = getMapInstance();
+      if (mapInstance && mapInstance.getLayer('feedstock-vector-layer')) {
+        try {
+          // Make sure the layer is visible if at least one crop is selected
+          if (visibleCrops.length > 0 && localLayerVisibility.feedstock) {
+            mapInstance.setLayoutProperty('feedstock-vector-layer', 'visibility', 'visible');
+          }
+          
+          // Create a filter that shows only visible crops
+          const visibleCropFilter = ['match', ['get', 'main_crop_name'], visibleCrops, true, false];
+          // Combine with the existing base filter that excludes 'U' code
+          const combinedFilter = ['all', ['!=', ['get', 'main_crop_code'], 'U'], visibleCropFilter];
+          
+          // Apply the filter directly to the map
+          mapInstance.setFilter('feedstock-vector-layer', combinedFilter);
+          console.log(`Directly updated crop filter for ${cropName} (${visibleCrops.length} crops visible)`);
+        } catch (err) {
+          console.error('Error directly updating crop filter:', err);
+        }
+      }
+      
+      // Always update parent state to keep everything in sync
       onCropFilterChange(visibleCrops);
+      
       return newState;
     });
   };
@@ -209,6 +270,31 @@ const LayerControls: React.FC<LayerControlsProps> = ({
     applySeasonalFilter(monthRange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // Store a reference to the map instance when it becomes available
+  useEffect(() => {
+    const checkForMap = () => {
+      const mapInstance = getMapInstance();
+      if (mapInstance) {
+        console.log('Map instance found and stored for direct manipulation');
+        return true;
+      }
+      return false;
+    };
+    
+    // Try immediately
+    if (!checkForMap()) {
+      // If not available, set up a polling mechanism
+      const intervalId = setInterval(() => {
+        if (checkForMap()) {
+          clearInterval(intervalId);
+        }
+      }, 500); // Check every 500ms
+      
+      // Clean up
+      return () => clearInterval(intervalId);
+    }
+  }, []);
 
   const handleSelectAllCrops = () => {
     setCropVisibility(prev => {
@@ -217,6 +303,40 @@ const LayerControls: React.FC<LayerControlsProps> = ({
       allCropNames.forEach(name => {
         newState[name] = isCropAvailableInRange(name, monthRange);
       });
+      
+      // Get visible crops after applying seasonal filter
+      const visibleCrops = allCropNames.filter(name => newState[name]);
+      
+      // Try to directly update the map filter for crop visibility
+      const mapInstance = getMapInstance();
+      if (mapInstance && mapInstance.getLayer('feedstock-vector-layer')) {
+        try {
+          // Make sure the layer is visible if the feedstock layer is enabled
+          if (localLayerVisibility.feedstock) {
+            mapInstance.setLayoutProperty('feedstock-vector-layer', 'visibility', 'visible');
+          }
+          
+          // If all crops are visible, we can use a simpler filter
+          if (visibleCrops.length === allCropNames.length) {
+            mapInstance.setFilter('feedstock-vector-layer', ['!=', ['get', 'main_crop_code'], 'U']);
+          } else {
+            // Create a filter that shows only visible crops
+            const visibleCropFilter = ['match', ['get', 'main_crop_name'], visibleCrops, true, false];
+            // Combine with the existing base filter that excludes 'U' code
+            const combinedFilter = ['all', ['!=', ['get', 'main_crop_code'], 'U'], visibleCropFilter];
+            
+            // Apply the filter directly to the map
+            mapInstance.setFilter('feedstock-vector-layer', combinedFilter);
+          }
+          console.log(`Directly updated crop filter to show ${visibleCrops.length} crops`);
+        } catch (err) {
+          console.error('Error directly updating crop filter:', err);
+        }
+      }
+      
+      // Always update parent state to keep everything in sync
+      onCropFilterChange(visibleCrops);
+      
       return newState;
     });
   };
@@ -225,21 +345,140 @@ const LayerControls: React.FC<LayerControlsProps> = ({
      setCropVisibility(prev => {
         const newState = { ...prev };
         allCropNames.forEach(name => newState[name] = false);
+        
+        // Try to directly update the map filter to hide all crops
+        const mapInstance = getMapInstance();
+        if (mapInstance && mapInstance.getLayer('feedstock-vector-layer')) {
+          try {
+            // Set a filter that will hide all crops (no crop will match this condition)
+            mapInstance.setFilter('feedstock-vector-layer', ['==', ['get', 'main_crop_name'], '___NO_CROP_MATCHES_THIS___']);
+            console.log('Directly updated crop filter to hide all crops');
+          } catch (err) {
+            console.error('Error directly updating crop filter:', err);
+          }
+        }
+        
+        // Always update parent state to keep everything in sync
+        onCropFilterChange([]);
+        
         return newState;
      });
   };
 
   const isCroplandVisible = initialVisibility?.feedstock ?? false;
 
+  // Get reference to the map
+  const getMapInstance = () => {
+    // This is a workaround to access the map instance directly
+    // Ideally, we would have a proper reference passed from the parent
+    const mapInstance = (window as any).mapboxMap;
+    return mapInstance;
+  };
+  
+  // Robust function to toggle layer visibility directly on the map and update local state
+  const directLayerToggle = (layerId: string, isVisible: boolean, updateParentState: boolean = true): boolean => {
+    // Update local state first for immediate UI feedback
+    setLocalLayerVisibility(prev => ({
+      ...prev,
+      [layerId]: isVisible
+    }));
+    
+    // Get map instance
+    const mapInstance = getMapInstance();
+    if (!mapInstance) {
+      console.error("Map instance not found");
+      return false; // Failed to toggle directly
+    }
+    
+    // Get the corresponding Mapbox layer ID
+    const mapboxLayerId = layerIdMapping[layerId];
+    if (!mapboxLayerId) {
+      console.error(`No Mapbox layer ID found for ${layerId}`);
+      return false; // Failed to toggle directly
+    }
+    
+    try {
+      // Check if the layer exists in the map
+      if (mapInstance.getLayer(mapboxLayerId)) {
+        // Set the visibility property directly on the map layer
+        mapInstance.setLayoutProperty(mapboxLayerId, 'visibility', isVisible ? 'visible' : 'none');
+        console.log(`Set ${mapboxLayerId} visibility to ${isVisible ? 'visible' : 'none'} directly`);
+        
+        // Update parent state if requested (to keep the overall app state in sync)
+        if (updateParentState) {
+          onLayerToggle(layerId, isVisible);
+        }
+        
+        return true; // Successfully toggled directly
+      } else {
+        console.warn(`Layer ${mapboxLayerId} not found in map`);
+        return false; // Failed to toggle directly
+      }
+    } catch (err) {
+      console.error(`Error setting ${mapboxLayerId} visibility:`, err);
+      return false; // Failed to toggle directly
+    }
+  };
+
+  // Define a map of layer IDs to their corresponding Mapbox layer IDs
+  const layerIdMapping: { [key: string]: string } = {
+    feedstock: 'feedstock-vector-layer',
+    railLines: 'rail-lines-layer',
+    freightTerminals: 'freight-terminals-layer',
+    freightRoutes: 'freight-routes-layer',
+    petroleumPipelines: 'petroleum-pipelines-layer',
+    crudeOilPipelines: 'crude-oil-pipelines-layer',
+    naturalGasPipelines: 'natural-gas-pipelines-layer',
+    anaerobicDigester: 'anaerobic-digester-layer',
+    biodieselPlants: 'biodiesel-plants-layer',
+    biorefineries: 'biorefineries-layer',
+    safPlants: 'saf-plants-layer',
+    renewableDiesel: 'renewable-diesel-layer',
+    mrf: 'mrf-layer',
+    cementPlants: 'cement-plants-layer',
+    landfillLfg: 'landfill-lfg-layer',
+    wastewaterTreatment: 'wastewater-treatment-layer',
+    wasteToEnergy: 'waste-to-energy-layer',
+    combustionPlants: 'combustion-plants-layer'
+  };
+
+  // Show all layers with proper state management
+  const handleShowAllLayers = (e?: React.MouseEvent): void => {
+    if (e) e.stopPropagation();
+    onShowAllLayers();
+  };
+
+  // Hide all layers with proper state management
+  const handleHideAllLayers = (e?: React.MouseEvent): void => {
+    if (e) e.stopPropagation();
+    onHideAllLayers();
+  };
+
   return (
     <Card className="w-full py-1">
       <Accordion type="multiple" defaultValue={['layers', 'filters']} className="w-full px-4 py-0">
         {/* Layer Toggles Section */}
         <AccordionItem value="layers">
-          <AccordionTrigger className="[&[data-state=open]>svg]:rotate-0 [&[data-state=closed]>svg]:-rotate-90">
-            <div className="flex items-center text-sm">
-              <Layers className="h-5 w-5 mr-2" />
-              Layers
+          <AccordionTrigger className="[&[data-state=open]>svg]:rotate-0 [&[data-state=closed]>svg]:-rotate-90 no-underline">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center text-sm no-underline">
+                <Layers className="h-5 w-5 mr-2" />
+                <span className="no-underline">Layers</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={handleShowAllLayers}
+                  className="text-xs px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors layer-control-button"
+                >
+                  Show All
+                </button>
+                <button 
+                  onClick={handleHideAllLayers}
+                  className="text-xs px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors layer-control-button"
+                >
+                  Hide All
+                </button>
+              </div>
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -251,8 +490,9 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="feedstockLayer"
-                      checked={initialVisibility?.feedstock ?? false}
-                      onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('feedstock', !!checked)}
+                      data-layer-checkbox="feedstock"
+                      checked={localLayerVisibility?.feedstock ?? false}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('feedstock', !!checked)}
                     />
                     <Label htmlFor="feedstockLayer" className="flex items-center font-medium">
                       Crop Residues
@@ -307,7 +547,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                           onClick={() => setIsCropLegendCollapsed(!isCropLegendCollapsed)}
                           className="text-sm font-medium text-left w-full py-1 hover:bg-gray-100 rounded flex justify-between items-center"
                         >
-                          <span>Filter by Crop</span>
+                          <span>Filter Crop Types</span>
                           <ChevronDown className={`text-muted-foreground size-4 shrink-0 transition-transform duration-200 ${isCropLegendCollapsed ? '-rotate-90' : 'rotate-0'}`} />
                         </button>
                         {!isCropLegendCollapsed && (
@@ -327,6 +567,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                               <div key={cropName} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={`crop-${cropName}`}
+                                  data-crop-checkbox={cropName}
                                   checked={cropVisibility[cropName] ?? false}
                                   onCheckedChange={(checked) => handleCropToggle(cropName, !!checked)}
                                 />
@@ -337,6 +578,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                                     height: '12px',
                                     backgroundColor: cropColorMapping[cropName],
                                     border: '1px solid #ccc',
+                                    marginRight: '4px',
                                     flexShrink: 0,
                                   }}
                                 ></span>
@@ -362,8 +604,25 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="infrastructureLayer"
+                      data-layer-checkbox="infrastructure"
                       checked={infrastructureMaster}
-                      onCheckedChange={(checked: boolean | 'indeterminate') => onInfrastructureToggle(!!checked)}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => {
+                        const isChecked = !!checked;
+                        const infrastructureLayers = [
+                          'anaerobicDigester', 'biodieselPlants', 'biorefineries', 'safPlants',
+                          'renewableDiesel', 'mrf', 'cementPlants', 'landfillLfg',
+                          'wastewaterTreatment', 'wasteToEnergy', 'combustionPlants'
+                        ];
+
+                        // Update parent state for master checkbox
+                        onInfrastructureToggle(isChecked);
+                        
+                        // Update parent state for each individual layer, which will trigger updates
+                        // in the Map component and this component's local state.
+                        infrastructureLayers.forEach(layerId => {
+                          onLayerToggle(layerId, isChecked);
+                        });
+                      }}
                     />
                     <Label htmlFor="infrastructureLayer" className="font-medium text-sm">Infrastructure</Label>
                   </div>
@@ -380,11 +639,12 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                   <>
                     {/* Anaerobic Digester Layer Toggle - Under Infrastructure */}
                     <div className="flex items-center space-x-2 pl-6">
-                       <Checkbox
-                        id="anaerobicDigesterLayer"
-                        checked={initialVisibility?.anaerobicDigester ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('anaerobicDigester', !!checked)}
-                      />
+                                           <Checkbox
+                      id="anaerobicDigesterLayer"
+                      data-layer-checkbox="anaerobicDigester"
+                      checked={localLayerVisibility?.anaerobicDigester ?? false}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('anaerobicDigester', !!checked)}
+                    />
                       <Label htmlFor="anaerobicDigesterLayer" className="flex items-center text-xs">
                         <span
                           style={{
@@ -393,7 +653,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#8B4513',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -405,8 +665,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="biorefineries"
-                        checked={initialVisibility?.biorefineries ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('biorefineries', !!checked)}
+                        checked={localLayerVisibility?.biorefineries ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('biorefineries', !!checked)}
                       />
                       <Label htmlFor="biorefineries" className="flex items-center text-xs">
                         <span
@@ -416,7 +676,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#9370DB',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -428,8 +688,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="safPlants"
-                        checked={initialVisibility?.safPlants ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('safPlants', !!checked)}
+                        checked={localLayerVisibility?.safPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('safPlants', !!checked)}
                       />
                       <Label htmlFor="safPlants" className="flex items-center text-xs">
                         <span
@@ -439,7 +699,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#1E90FF',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -451,8 +711,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="renewableDiesel"
-                        checked={initialVisibility?.renewableDiesel ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('renewableDiesel', !!checked)}
+                        checked={localLayerVisibility?.renewableDiesel ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('renewableDiesel', !!checked)}
                       />
                       <Label htmlFor="renewableDiesel" className="flex items-center text-xs">
                         <span
@@ -462,7 +722,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#FF8C00',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -474,8 +734,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="mrf"
-                        checked={initialVisibility?.mrf ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('mrf', !!checked)}
+                        checked={localLayerVisibility?.mrf ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('mrf', !!checked)}
                       />
                       <Label htmlFor="mrf" className="flex items-center text-xs">
                         <span
@@ -485,7 +745,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#20B2AA',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -497,8 +757,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="cementPlants"
-                        checked={initialVisibility?.cementPlants ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('cementPlants', !!checked)}
+                        checked={localLayerVisibility?.cementPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('cementPlants', !!checked)}
                       />
                       <Label htmlFor="cementPlants" className="flex items-center text-xs">
                         <span
@@ -508,7 +768,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#708090',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -520,8 +780,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="biodieselPlantsLayer"
-                        checked={initialVisibility?.biodieselPlants ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('biodieselPlants', !!checked)}
+                        checked={localLayerVisibility?.biodieselPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('biodieselPlants', !!checked)}
                       />
                       <Label htmlFor="biodieselPlantsLayer" className="flex items-center text-xs">
                         <span
@@ -531,7 +791,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#228B22',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -543,8 +803,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="landfillLfgLayer"
-                        checked={initialVisibility?.landfillLfg ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('landfillLfg', !!checked)}
+                        checked={localLayerVisibility?.landfillLfg ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('landfillLfg', !!checked)}
                       />
                       <Label htmlFor="landfillLfgLayer" className="flex items-center text-xs">
                         <span
@@ -554,7 +814,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#800080',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
@@ -566,8 +826,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="wastewaterTreatmentLayer"
-                        checked={initialVisibility?.wastewaterTreatment ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('wastewaterTreatment', !!checked)}
+                        checked={localLayerVisibility?.wastewaterTreatment ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('wastewaterTreatment', !!checked)}
                       />
                       <Label htmlFor="wastewaterTreatmentLayer" className="flex items-center text-xs">
                         <span
@@ -577,11 +837,57 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                             height: '12px',
                             backgroundColor: '#00CED1',
                             borderRadius: '50%',
-                            marginRight: '4px',
+                            marginRight: '2px',
                             flexShrink: 0,
                           }}
                         ></span>
                         Wastewater Treatment Plants
+                      </Label>
+                    </div>
+                    
+                    {/* Waste to Energy Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="wasteToEnergyLayer"
+                        checked={localLayerVisibility?.wasteToEnergy ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('wasteToEnergy', !!checked)}
+                      />
+                      <Label htmlFor="wasteToEnergyLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#FF6347', /* Tomato color for Waste to Energy Plants */
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Waste to Energy Plants
+                      </Label>
+                    </div>
+                    
+                    {/* Combustion Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="combustionPlantsLayer"
+                        checked={localLayerVisibility?.combustionPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('combustionPlants', !!checked)}
+                      />
+                      <Label htmlFor="combustionPlantsLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#B22222', /* FireBrick color for Combustion Plants */
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Combustion Plants
                       </Label>
                     </div>
                   </>
@@ -594,8 +900,23 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="transportationLayer"
+                      data-layer-checkbox="transportation"
                       checked={transportationMaster}
-                      onCheckedChange={(checked: boolean | 'indeterminate') => onTransportationToggle(!!checked)}
+                      onCheckedChange={(checked: boolean | 'indeterminate') => {
+                        const isChecked = !!checked;
+                        const transportationLayers = [
+                          'railLines', 'freightTerminals', 'freightRoutes', 'petroleumPipelines',
+                          'crudeOilPipelines', 'naturalGasPipelines'
+                        ];
+
+                        // Update parent state for master checkbox
+                        onTransportationToggle(isChecked);
+
+                        // Update parent state for each individual layer
+                        transportationLayers.forEach(layerId => {
+                          onLayerToggle(layerId, isChecked);
+                        });
+                      }}
                     />
                     <Label htmlFor="transportationLayer" className="font-medium text-sm">Transportation</Label>
                   </div>
@@ -614,8 +935,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6">
                        <Checkbox
                         id="railLinesLayer"
-                        checked={initialVisibility?.railLines ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('railLines', !!checked)}
+                        checked={localLayerVisibility?.railLines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('railLines', !!checked)}
                       />
                       <Label htmlFor="railLinesLayer" className="flex items-center text-xs">
                         <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
@@ -637,8 +958,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="freightTerminalsLayer"
-                        checked={initialVisibility?.freightTerminals ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('freightTerminals', !!checked)}
+                        checked={localLayerVisibility?.freightTerminals ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('freightTerminals', !!checked)}
                       />
                       <Label htmlFor="freightTerminalsLayer" className="flex items-center text-xs">
                         <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
@@ -661,8 +982,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="freightRoutesLayer"
-                        checked={initialVisibility?.freightRoutes ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('freightRoutes', !!checked)}
+                        checked={localLayerVisibility?.freightRoutes ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('freightRoutes', !!checked)}
                       />
                       <Label htmlFor="freightRoutesLayer" className="flex items-center text-xs">
                         <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
@@ -684,8 +1005,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="petroleumPipelinesLayer"
-                        checked={initialVisibility?.petroleumPipelines ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('petroleumPipelines', !!checked)}
+                        checked={localLayerVisibility?.petroleumPipelines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('petroleumPipelines', !!checked)}
                       />
                       <Label htmlFor="petroleumPipelinesLayer" className="flex items-center text-xs">
                         <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
@@ -707,8 +1028,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="crudeOilPipelinesLayer"
-                        checked={initialVisibility?.crudeOilPipelines ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('crudeOilPipelines', !!checked)}
+                        checked={localLayerVisibility?.crudeOilPipelines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('crudeOilPipelines', !!checked)}
                       />
                       <Label htmlFor="crudeOilPipelinesLayer" className="flex items-center text-xs">
                         <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>
@@ -730,8 +1051,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                     <div className="flex items-center space-x-2 pl-6 mt-2">
                        <Checkbox
                         id="naturalGasPipelinesLayer"
-                        checked={initialVisibility?.naturalGasPipelines ?? false}
-                        onCheckedChange={(checked: boolean | 'indeterminate') => onLayerToggle('naturalGasPipelines', !!checked)}
+                        checked={localLayerVisibility?.naturalGasPipelines ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('naturalGasPipelines', !!checked)}
                       />
                       <Label htmlFor="naturalGasPipelinesLayer" className="flex items-center text-xs">
                         <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '4px' }}>

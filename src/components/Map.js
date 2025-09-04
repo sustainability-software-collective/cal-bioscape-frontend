@@ -848,6 +848,9 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         preserveDrawingBuffer: true, // Prevent refresh on state changes
         renderWorldCopies: true // Improve performance
       });
+      
+      // Expose map instance globally for direct access by other components
+      window.mapboxMap = map.current;
 
       map.current.on('load', () => {
         console.log("Map loaded successfully");
@@ -1319,6 +1322,26 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         });
         console.log("Added wastewater treatment plants vector source");
         
+        // Add waste to energy plants infrastructure layer
+        const wasteToEnergyTilesetUrl = 'mapbox://tylerhuntington222.W2E_points';
+        console.log("Adding waste to energy plants tileset with URL:", wasteToEnergyTilesetUrl);
+        
+        map.current.addSource('waste-to-energy-source', {
+          type: 'vector',
+          url: wasteToEnergyTilesetUrl
+        });
+        console.log("Added waste to energy plants vector source");
+        
+        // Add combustion plants infrastructure layer
+        const combustionPlantsTilesetUrl = 'mapbox://tylerhuntington222.COMB_points';
+        console.log("Adding combustion plants tileset with URL:", combustionPlantsTilesetUrl);
+        
+        map.current.addSource('combustion-plants-source', {
+          type: 'vector',
+          url: combustionPlantsTilesetUrl
+        });
+        console.log("Added combustion plants vector source");
+        
         // Add petroleum pipelines infrastructure layer
         const petroleumPipelinesTilesetUrl = 'mapbox://tylerhuntington222.b4obgo1f';
         console.log("Adding petroleum pipelines tileset with URL:", petroleumPipelinesTilesetUrl);
@@ -1609,7 +1632,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             id: 'landfill-lfg-layer',
             type: 'circle',
             source: 'landfill-lfg-source',
-            'source-layer': '0pobnuqo', // Source layer name from tileset ID
+            'source-layer': 'landfills_lmop_active_project-3cg3gl', // Source layer name from tileset ID
             paint: {
               'circle-color': '#800080', // Purple color for landfills with LFG projects
               'circle-radius': 6,
@@ -1647,6 +1670,52 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           console.log("Added wastewater treatment plants layer with correct source layer 'us_wwt_pts'");
         } catch (error) {
           console.error("Failed to add wastewater treatment plants layer:", error);
+        }
+        
+        // Add waste to energy plants layer
+        try {
+          map.current.addLayer({
+            id: 'waste-to-energy-layer',
+            type: 'circle',
+            source: 'waste-to-energy-source',
+            'source-layer': 'W2E_points', // Source layer name from the tileset
+            paint: {
+              'circle-color': '#FF6347', // Tomato color for waste to energy plants
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.wasteToEnergy ? 'visible' : 'none'
+            }
+          });
+          console.log("Added waste to energy plants layer with correct source layer 'W2E_points'");
+        } catch (error) {
+          console.error("Failed to add waste to energy plants layer:", error);
+        }
+        
+        // Add combustion plants layer
+        try {
+          map.current.addLayer({
+            id: 'combustion-plants-layer',
+            type: 'circle',
+            source: 'combustion-plants-source',
+            'source-layer': 'COMB_points', // Source layer name from the tileset ID
+            paint: {
+              'circle-color': '#B22222', // FireBrick color for combustion plants
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.combustionPlants ? 'visible' : 'none'
+            }
+          });
+          console.log("Added combustion plants layer with correct source layer 'COMB_points'");
+        } catch (error) {
+          console.error("Failed to add combustion plants layer:", error);
         }
         
         // Add petroleum pipelines layer (as part of transportation)
@@ -2294,6 +2363,78 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             }
           });
           
+          // --- Add Click Listener for Combustion Plants Layer (Display Properties) ---
+          map.current.on('click', 'combustion-plants-layer', (e) => {
+            // Don't show popup when in siting mode (either in placement or review state)
+            if (sitingModeRef.current) {
+              // Stop event propagation to prevent popup
+              e.originalEvent.stopPropagation();
+              return;
+            }
+            
+            // Ensure features exist and prevent popups for clicks not directly on a feature
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              const coordinates = e.lngLat;
+              const properties = feature.properties;
+
+              // --- Format Properties for Display ---
+
+              // Helper function to convert snake_case to Title Case
+              const toTitleCase = (str) => {
+                return str.replace(/_/g, ' ').replace(
+                  /\w\S*/g,
+                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              };
+
+              let contentLines = '';
+              // Iterate through all properties
+              for (const key in properties) {
+                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
+                  const label = toTitleCase(key);
+                  let value = properties[key];
+
+                  // Format as "Label: Value" on a single line, left-justified
+                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
+                }
+              }
+
+              // Increase right padding for close button spacing, remove table
+              const popupHTML = `
+                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Combustion Plant Details</h4>
+                  ${contentLines}
+                </div>
+              `;
+
+              // --- Create and Show Popup ---
+              // Close any existing popup first
+              if (currentPopup.current) {
+                currentPopup.current.remove();
+              }
+              
+              // Create new popup and store reference
+              currentPopup.current = new mapboxgl.Popup({ 
+                  closeButton: true, 
+                  closeOnClick: true, 
+                  maxWidth: '350px',
+                  className: 'facility-popup'
+                })
+                .setLngLat(coordinates)
+                .setHTML(popupHTML)
+                .addTo(map.current);
+
+              // Add event listener to clear popup reference when it's closed
+              currentPopup.current.on('close', () => {
+                currentPopup.current = null;
+                console.log('Popup closed manually');
+              });
+
+              console.log('Displayed formatted popup for Combustion Plant:', properties);
+            }
+          });
+          
           // --- Add Click Listener for Material Recovery Facilities Layer (Display Properties) ---
           map.current.on('click', 'mrf-layer', (e) => {
             // Don't show popup when in siting mode (either in placement or review state)
@@ -2397,7 +2538,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       // Clean up buffer reference
       currentBuffer.current = null;
     };
-  }, [layerVisibility]); // Add layerVisibility to dependencies since it's used in map initialization
+  }, []); // An empty dependency array ensures this runs only once on mount
 
   // Effect to update the buffer when radius or unit changes
   useEffect(() => {
@@ -2685,6 +2826,32 @@ useEffect(() => {
     map.current.setLayoutProperty('wastewater-treatment-layer', 'visibility', visibility);
 
   }, [mapLoaded, layerVisibility?.wastewaterTreatment]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling waste to energy plants layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('waste-to-energy-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isWasteToEnergyVisible = layerVisibility?.wasteToEnergy || false;
+    const visibility = isWasteToEnergyVisible ? 'visible' : 'none';
+    console.log(`Setting waste to energy plants layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('waste-to-energy-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.wasteToEnergy]); // Depend on mapLoaded and the specific layerVisibility property
+  
+  // Effect for controlling combustion plants layer visibility
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !map.current.getLayer('combustion-plants-layer')) {
+      return; // Ensure map is loaded and layer exists
+    }
+
+    const isCombustionPlantsVisible = layerVisibility?.combustionPlants || false;
+    const visibility = isCombustionPlantsVisible ? 'visible' : 'none';
+    console.log(`Setting combustion plants layer visibility to: ${visibility}`);
+    map.current.setLayoutProperty('combustion-plants-layer', 'visibility', visibility);
+
+  }, [mapLoaded, layerVisibility?.combustionPlants]); // Depend on mapLoaded and the specific layerVisibility property
 
   // Define validateBufferState function before it's used in dependency arrays
   const validateBufferState = useCallback(() => {
