@@ -26,8 +26,8 @@ export default function AboutPage() {
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">Project Vision</h3>
                 <p className="mb-6">
                   The <Link href="https://www.beamcircular.org/news-updates/welcome-to-the-biocircular-valley-virtual-institute-on-feedstocks-of-the-future" className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">BioCircular Valley initiative</Link> represents a strategic effort to cultivate a thriving circular bioeconomy 
-                  within California's Northern San Joaquin Valley (NSJV), specifically encompassing San Joaquin, Stanislaus, and Merced counties.
-                  Our core vision is to transform the region's abundant but often underutilized agricultural waste streams—including crop residues 
+                  within California&apos;s Northern San Joaquin Valley (NSJV), specifically encompassing San Joaquin, Stanislaus, and Merced counties.
+                  Our core vision is to transform the region&apos;s abundant but often underutilized agricultural waste streams—including crop residues 
                   and food processing byproducts like almond shells, fruit peels, and orchard trimmings—into valuable bioproducts, sustainable 
                   biofuels, and advanced materials.
                 </p>
@@ -88,10 +88,10 @@ export default function AboutPage() {
                 
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">Project Partners</h3>
                 <p className="mb-6">
-                  The BioCircular Valley initiative is a collaborative effort involving key research institutions (Department of Energy's Lawrence Berkeley 
+                  The BioCircular Valley initiative is a collaborative effort involving key research institutions (Department of Energy&apos;s Lawrence Berkeley 
                   National Laboratory, UC Berkeley, UC Merced, UC Agriculture and Natural Resources, USDA Albany Agricultural Research Station), 
                   industry partners (Almond Board of California), and regional economic development organizations (BEAM Circular), supported by 
-                  funding from Schmidt Sciences' Virtual Institute on Feedstocks of the Future.
+                  funding from Schmidt Sciences&apos; Virtual Institute on Feedstocks of the Future.
                 </p>
                 
                 <div className="mt-10 mb-8">

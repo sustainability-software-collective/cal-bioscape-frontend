@@ -1475,8 +1475,9 @@ useEffect(() => {
     
     return () => {
       // Clean up the observer when the component unmounts
-      if (mapContainer.current) {
-        resizeObserver.unobserve(mapContainer.current);
+      const currentMapContainer = mapContainer.current;
+      if (currentMapContainer) {
+        resizeObserver.unobserve(currentMapContainer);
         console.log('Resize observer detached from map container');
       }
       

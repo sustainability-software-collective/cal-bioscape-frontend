@@ -1,5 +1,4 @@
 import Header from '@/components/Header';
-import Link from 'next/link';
 
 export default function ContactPage() {
   return (
@@ -25,7 +24,7 @@ export default function ContactPage() {
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">Get In Touch</h3>
                 <p className="mb-6">
                   We welcome your questions, feedback, and collaboration opportunities. The Cal BioScape team is committed to advancing 
-                  the circular bioeconomy in California's Northern San Joaquin Valley and we're eager to connect with stakeholders, 
+                  the circular bioeconomy in California&apos;s Northern San Joaquin Valley and we&apos;re eager to connect with stakeholders, 
                   researchers, and community members.
                 </p>
                 

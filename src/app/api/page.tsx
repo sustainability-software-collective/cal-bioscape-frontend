@@ -58,8 +58,8 @@ export default function ApiPage() {
                 
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">Interested?</h3>
                 <p className="mb-6">
-                  If you're interested in being notified when our API becomes available, please <Link href="/contact" className="text-blue-600 hover:text-blue-800 underline">contact us</Link>.
-                  We welcome collaboration with researchers, developers, and organizations interested in advancing California's bioeconomy.
+                  If you&apos;re interested in being notified when our API becomes available, please <Link href="/contact" className="text-blue-600 hover:text-blue-800 underline">contact us</Link>.
+                  We welcome collaboration with researchers, developers, and organizations interested in advancing California&apos;s bioeconomy.
                 </p>
               </div>
             </div>
