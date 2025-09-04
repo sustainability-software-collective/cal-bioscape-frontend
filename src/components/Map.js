@@ -565,16 +565,21 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       hoverMarkerEl.style.transform = 'translate(-50%, -100%)';
       hoverMarkerEl.style.pointerEvents = 'none'; // Make sure it doesn't interfere with map events
       hoverMarkerEl.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))';
+      hoverMarkerEl.style.zIndex = '1000'; // Ensure it's above other elements
 
+      // Create the hover marker and add it to the map
       const hoverMarker = new mapboxgl.Marker({
         element: hoverMarkerEl,
         anchor: 'bottom',
         draggable: false,
+        offset: [0, 0]
       }).setLngLat([0, 0]).addTo(map.current);
       
       // Update hover marker position as mouse moves
       const onMouseMove = (e) => {
-        hoverMarker.setLngLat(e.lngLat);
+        if (e && e.lngLat) {
+          hoverMarker.setLngLat(e.lngLat);
+        }
       };
       
       // Add mousemove listener to update marker position
@@ -587,12 +592,21 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           filter: drop-shadow(0 5px 3px rgba(0, 0, 0, 0.4));
           opacity: 0.85;
           transition: transform 0.1s ease-out;
+          z-index: 1000;
+          pointer-events: none;
         }
         .hover-marker:hover {
           transform: translate(-50%, -105%) scale(1.1);
         }
+        .custom-marker {
+          filter: drop-shadow(0 5px 3px rgba(0, 0, 0, 0.4));
+          z-index: 1000;
+        }
       `;
       document.head.appendChild(shadowStyle);
+      
+      // Force an initial mousemove event to position the marker
+      map.current.fire('mousemove', { lngLat: map.current.getCenter() });
       
       return () => {
         // Only clean up the hover marker and cursor, don't touch the placed marker or buffer
@@ -656,12 +670,15 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
     markerElement.style.backgroundRepeat = 'no-repeat';
     markerElement.style.backgroundPosition = 'center';
     markerElement.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))';
+    markerElement.style.zIndex = '1000'; // Ensure it's above other elements
+    markerElement.style.pointerEvents = 'auto'; // Allow interaction with the marker
 
     try {
       // Add the marker to the map immediately
       const marker = new mapboxgl.Marker({
         element: markerElement,
-        anchor: 'bottom'
+        anchor: 'bottom',
+        offset: [0, 0]
       })
         .setLngLat(lngLat)
         .addTo(map.current);
@@ -2380,7 +2397,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       // Clean up buffer reference
       currentBuffer.current = null;
     };
-  }, []); // Empty dependency array to initialize map only once
+  }, [layerVisibility]); // Add layerVisibility to dependencies since it's used in map initialization
 
   // Effect to update the buffer when radius or unit changes
   useEffect(() => {
@@ -2563,7 +2580,7 @@ useEffect(() => {
   console.log(`Setting anaerobic digester layer visibility to: ${visibility}`);
   map.current.setLayoutProperty('anaerobic-digester-layer', 'visibility', visibility);
 
-}, [mapLoaded, layerVisibility?.anaerobicDigester, layerVisibility]); // Added layerVisibility to dependencies
+}, [mapLoaded, layerVisibility?.anaerobicDigester]); // Depend on mapLoaded and the specific layerVisibility property
 
   // Effect for controlling biodiesel plants layer visibility
   useEffect(() => {
@@ -2735,6 +2752,9 @@ useEffect(() => {
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
+    // Store a reference to the current map container element
+    const currentMapContainer = mapContainer.current;
+    
     // Create a resize observer to detect container size changes
     const resizeObserver = new ResizeObserver(() => {
       if (!map.current) return;
@@ -2747,8 +2767,8 @@ useEffect(() => {
     });
     
     // Start observing the container for size changes
-    if (mapContainer.current) {
-      resizeObserver.observe(mapContainer.current);
+    if (currentMapContainer) {
+      resizeObserver.observe(currentMapContainer);
       console.log('Resize observer attached to map container');
     }
     
@@ -2766,7 +2786,6 @@ useEffect(() => {
     
     return () => {
       // Clean up the observer when the component unmounts
-      const currentMapContainer = mapContainer.current;
       if (currentMapContainer) {
         resizeObserver.unobserve(currentMapContainer);
         console.log('Resize observer detached from map container');

@@ -15,7 +15,7 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 py-1 flex-shrink-0 w-full">
       <div className="w-full px-4 lg:px-6">
-        <div className="flex items-center justify-between h-12 ml-8">
+        <div className="flex items-center justify-between h-10 ml-10">
           {/* Logo and Site Name */}
           <div className="flex items-center">
             <button 
@@ -37,7 +37,7 @@ export default function Header() {
           </div>
 
           {/* Navigation */}
-          <nav className="ml-auto flex items-center space-x-8 mr-10">
+          <nav className="ml-auto flex items-center space-x-12 mr-8">
             <Link 
               href="/"
               className={`text-sm font-medium ${pathname === '/' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'} transition-colors duration-200`}
