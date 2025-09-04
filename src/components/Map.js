@@ -2664,7 +2664,6 @@ useEffect(() => {
       }
     }
   });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [mapLoaded, layerVisibility]);
 
   // Define validateBufferState function before it's used in dependency arrays

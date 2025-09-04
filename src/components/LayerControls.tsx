@@ -270,7 +270,6 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   // Apply seasonal filter when component mounts
   useEffect(() => {
     applySeasonalFilter(monthRange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Store a reference to the map instance when it becomes available
