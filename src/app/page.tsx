@@ -11,33 +11,33 @@ import { ChevronLeft, ChevronRight, Layers, Filter } from 'lucide-react';
 // Removed fetcher function
 export default function Home() {
   // State for layer visibility
-  const [layerVisibility, setLayerVisibility] = useState<{ [key: string]: boolean }>({ 
-    feedstock: true, 
-    transportation: true, 
-    railLines: true, 
-    anaerobicDigester: true, 
-    biodieselPlants: true, 
-    freightTerminals: true, 
-    freightRoutes: true,
-    petroleumPipelines: true,
-    crudeOilPipelines: true,
-    naturalGasPipelines: true,
-    biorefineries: true,
-    safPlants: true,
-    renewableDiesel: true,
-    mrf: true,
-    cementPlants: true,
-    landfillLfg: true,
-    wastewaterTreatment: true,
-    wasteToEnergy: true,
-    combustionPlants: true,
-    districtEnergySystems: true,
-    foodProcessors: true,
-    foodRetailers: true,
-    powerPlants: true,
-    foodBanks: true,
-    farmersMarkets: true
-  }); // Added all new layers
+  const [layerVisibility, setLayerVisibility] = useState<{ [key: string]: boolean }>({
+    feedstock: true,
+    transportation: false,
+    railLines: false,
+    anaerobicDigester: false,
+    biodieselPlants: false,
+    freightTerminals: false,
+    freightRoutes: false,
+    petroleumPipelines: false,
+    crudeOilPipelines: false,
+    naturalGasPipelines: false,
+    biorefineries: false,
+    safPlants: false,
+    renewableDiesel: false,
+    mrf: false,
+    cementPlants: false,
+    landfillLfg: false,
+    wastewaterTreatment: false,
+    wasteToEnergy: false,
+    combustionPlants: false,
+    districtEnergySystems: false,
+    foodProcessors: false,
+    foodRetailers: false,
+    powerPlants: false,
+    foodBanks: false,
+    farmersMarkets: false
+  });
 
   // State for panel collapse
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
