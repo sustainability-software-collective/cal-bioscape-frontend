@@ -23,8 +23,7 @@ import {
   ORCHARD_VINEYARD_RESIDUES, 
   ROW_CROP_RESIDUES, 
   FIELD_CROP_RESIDUES, 
-  CROP_NAME_MAPPING,
-  INFRASTRUCTURE_LAYERS
+  CROP_NAME_MAPPING
 } from '@/lib/constants';
 
 // Define a minimal type for the mapbox map instance to avoid using 'any'
