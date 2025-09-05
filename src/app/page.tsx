@@ -13,24 +13,30 @@ export default function Home() {
   // State for layer visibility
   const [layerVisibility, setLayerVisibility] = useState<{ [key: string]: boolean }>({ 
     feedstock: true, 
-    transportation: false, 
-    railLines: false, 
-    anaerobicDigester: false, 
-    biodieselPlants: false, 
-    freightTerminals: false, 
-    freightRoutes: false,
-    petroleumPipelines: false,
-    crudeOilPipelines: false,
-    naturalGasPipelines: false,
-    biorefineries: false,
-    safPlants: false,
-    renewableDiesel: false,
-    mrf: false,
-    cementPlants: false,
-    landfillLfg: false,
-    wastewaterTreatment: false,
-    wasteToEnergy: false,
-    combustionPlants: false
+    transportation: true, 
+    railLines: true, 
+    anaerobicDigester: true, 
+    biodieselPlants: true, 
+    freightTerminals: true, 
+    freightRoutes: true,
+    petroleumPipelines: true,
+    crudeOilPipelines: true,
+    naturalGasPipelines: true,
+    biorefineries: true,
+    safPlants: true,
+    renewableDiesel: true,
+    mrf: true,
+    cementPlants: true,
+    landfillLfg: true,
+    wastewaterTreatment: true,
+    wasteToEnergy: true,
+    combustionPlants: true,
+    districtEnergySystems: true,
+    foodProcessors: true,
+    foodRetailers: true,
+    powerPlants: true,
+    foodBanks: true,
+    farmersMarkets: true
   }); // Added all new layers
 
   // State for panel collapse
@@ -66,6 +72,12 @@ export default function Home() {
            layerVisibility.wastewaterTreatment ||
            layerVisibility.wasteToEnergy ||
            layerVisibility.combustionPlants ||
+           layerVisibility.districtEnergySystems ||
+           layerVisibility.foodProcessors ||
+           layerVisibility.foodRetailers ||
+           layerVisibility.powerPlants ||
+           layerVisibility.foodBanks ||
+           layerVisibility.farmersMarkets ||
            false;
   }, [
     layerVisibility.anaerobicDigester, 
@@ -78,7 +90,13 @@ export default function Home() {
     layerVisibility.landfillLfg,
     layerVisibility.wastewaterTreatment,
     layerVisibility.wasteToEnergy,
-    layerVisibility.combustionPlants
+    layerVisibility.combustionPlants,
+    layerVisibility.districtEnergySystems,
+    layerVisibility.foodProcessors,
+    layerVisibility.foodRetailers,
+    layerVisibility.powerPlants,
+    layerVisibility.foodBanks,
+    layerVisibility.farmersMarkets
   ]);
 
   const computedTransportationMaster = useMemo(() => {
@@ -151,7 +169,13 @@ export default function Home() {
       landfillLfg: isVisible, // Toggle landfills with LFG projects layer with infrastructure
       wastewaterTreatment: isVisible, // Toggle wastewater treatment plants layer with infrastructure
       wasteToEnergy: isVisible,
-      combustionPlants: isVisible
+      combustionPlants: isVisible,
+      districtEnergySystems: isVisible,
+      foodProcessors: isVisible,
+      foodRetailers: isVisible,
+      powerPlants: isVisible,
+      foodBanks: isVisible,
+      farmersMarkets: isVisible
     }));
     console.log(`Toggled infrastructure master to ${isVisible}, infrastructure layers set to ${isVisible}`);
   };
@@ -201,6 +225,13 @@ export default function Home() {
     });
   };
 
+  // Handler to close popup for a specific layer
+  const handleClosePopupForLayer = (layerId: string) => {
+    // This function will be passed to LayerControls and then to Map
+    // The Map component will handle the logic of closing the popup
+    console.log(`Request to close popup for layer: ${layerId}`);
+  };
+
   // Removed feedstockError check UI
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden no-scroll">
@@ -224,6 +255,7 @@ export default function Home() {
               transportationMaster={computedTransportationMaster} // Pass the computed transportation master state
               onShowAllLayers={handleShowAllLayers}
               onHideAllLayers={handleHideAllLayers}
+              onClosePopupForLayer={handleClosePopupForLayer}
             />
           </div>
         </div>

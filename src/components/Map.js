@@ -7,7 +7,8 @@ import * as turf from '@turf/turf'; // Import TurfJS
 import SitingButton from './SitingButton';
 import SitingAnalysis from './SitingAnalysis';
 import SitingInventory from './SitingInventory'; // Import the new component
-import { FEEDSTOCK_TILESET_ID } from '@/lib/constants';
+import { FEEDSTOCK_TILESET_ID, INFRASTRUCTURE_LAYERS } from '@/lib/constants';
+import { layerLabelMappings } from '@/lib/labelMappings';
 
 // --- Configuration ---
 // IMPORTANT: Replace with your actual Mapbox access token if using the placeholder.
@@ -169,6 +170,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
   const map = useRef(null); // Reference to the map instance
   const [mapLoaded, setMapLoaded] = useState(false); // State to track map load status
   const currentPopup = useRef(null); // Reference to track the current popup
+  const [currentPopupLayer, setCurrentPopupLayer] = useState(null); // State to track the layer of the current popup
   
   // Siting analysis state
   const [sitingMode, setSitingMode] = useState(false);
@@ -213,6 +215,115 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       "Turf Farms": "#00FF7F", "Unclassified Fallow": "#696969", "Walnuts": "#A52A2A",
       "Wheat": "#F4A460", "Wild Rice": "#EEE8AA", "Young Perennials": "#C19A6B",
   }), []);
+
+  // --- Helper Functions for Layer Interactivity ---
+
+  const formatPhoneNumber = useCallback((phone) => {
+    const phoneNumber = String(phone).replace(/[^\d]/g, '');
+    if (phoneNumber.length === 10) {
+      return `(${phoneNumber.substring(0, 3)}) ${phoneNumber.substring(3, 6)}-${phoneNumber.substring(6, 10)}`;
+    }
+    if (phoneNumber.length === 11 && phoneNumber.startsWith('1')) {
+        return `+1 (${phoneNumber.substring(1, 4)}) ${phoneNumber.substring(4, 7)}-${phoneNumber.substring(7, 11)}`;
+    }
+    return phone; // Return original if not a 10 or 11 digit number
+  }, []);
+
+  const isURL = useCallback((str) => {
+    if (typeof str !== 'string') return false;
+    return str.startsWith('http://') || str.startsWith('https://') || str.startsWith('www.');
+  }, []);
+
+  // Create and show a popup for a feature
+  const createPopupForFeature = useCallback((feature, lngLat, popupTitle, layerId) => {
+    if (!map.current) return;
+
+    const coordinates = lngLat;
+    const properties = feature.properties;
+    const labels = layerLabelMappings[layerId] || {};
+
+    let contentLines = '';
+    const excludedKeys = ['id', 'layer', 'source', 'source-layer', 'tile-id'];
+    const nullValues = ['NA', 'N/A', 'null', '', ' '];
+
+    for (const key in properties) {
+      const value = properties[key];
+      if (properties.hasOwnProperty(key) && !excludedKeys.includes(key.toLowerCase()) && value !== null && value !== undefined && value !== 0 && !nullValues.includes(String(value).trim())) {
+        const label = labels[key] || key.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        let formattedValue = value;
+
+        if (isURL(formattedValue)) {
+            const url = formattedValue.startsWith('http') ? formattedValue : `https://${formattedValue}`;
+            formattedValue = `<a href="${url}" target="_blank" rel="noopener noreferrer">${formattedValue}</a>`;
+        } else if (label.toLowerCase().includes('phone')) {
+            formattedValue = formatPhoneNumber(formattedValue);
+        } else if (typeof formattedValue === 'number') {
+          formattedValue = formattedValue.toLocaleString();
+        }
+
+        contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${formattedValue}</div>`;
+      }
+    }
+
+    if (!contentLines) {
+      contentLines = '<div>No additional information available.</div>';
+    }
+
+    const popupHTML = `
+      <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
+        <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">${popupTitle}</h4>
+        ${contentLines}
+      </div>
+    `;
+
+    if (currentPopup.current) {
+      currentPopup.current.remove();
+    }
+
+    currentPopup.current = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: true,
+      maxWidth: '350px',
+      className: 'facility-popup'
+    })
+      .setLngLat(coordinates)
+      .setHTML(popupHTML)
+      .addTo(map.current);
+
+    currentPopup.current.on('close', () => {
+      currentPopup.current = null;
+      setCurrentPopupLayer(null); // Reset the layer when the popup is closed
+    });
+
+    setCurrentPopupLayer(layerId); // Set the current popup layer
+  }, [formatPhoneNumber, isURL]);
+
+  // Add interactivity (click and hover) to a layer
+  const addLayerInteractivity = useCallback((layerId, popupTitle) => {
+    if (!map.current) return;
+
+    map.current.on('click', layerId, (e) => {
+      if (sitingModeRef.current) {
+        e.originalEvent.stopPropagation();
+        return;
+      }
+
+      if (e.features && e.features.length > 0) {
+        const layerIdWithoutSuffix = layerId.replace(/-layer$/, '');
+        createPopupForFeature(e.features[0], e.lngLat, popupTitle, layerIdWithoutSuffix);
+      }
+    });
+
+    map.current.on('mouseenter', layerId, () => {
+      if (!sitingModeRef.current) {
+        map.current.getCanvas().style.cursor = 'pointer';
+      }
+    });
+
+    map.current.on('mouseleave', layerId, () => {
+      map.current.getCanvas().style.cursor = '';
+    });
+  }, [createPopupForFeature]);
 
   // Function to convert radius to meters based on the selected unit
   const convertToMeters = useCallback((value, unit) => {
@@ -1385,6 +1496,56 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         });
         console.log("Added District Energy Systems vector source");
 
+        // Add food processors infrastructure layer
+        const foodProcessorsTilesetUrl = 'mapbox://tylerhuntington222.4vo6hho9';
+        console.log("Adding food processors tileset with URL:", foodProcessorsTilesetUrl);
+        
+        map.current.addSource('food-processors-source', {
+          type: 'vector',
+          url: foodProcessorsTilesetUrl
+        });
+        console.log("Added food processors vector source");
+
+        // Add food retailers infrastructure layer
+        const foodRetailersTilesetUrl = 'mapbox://tylerhuntington222.69ucggu2';
+        console.log("Adding food retailers tileset with URL:", foodRetailersTilesetUrl);
+        
+        map.current.addSource('food-retailers-source', {
+          type: 'vector',
+          url: foodRetailersTilesetUrl
+        });
+        console.log("Added food retailers vector source");
+
+        // Add power plants infrastructure layer
+        const powerPlantsTilesetUrl = `mapbox://${INFRASTRUCTURE_LAYERS.power_plants.tilesetId}`;
+        console.log("Adding power plants tileset with URL:", powerPlantsTilesetUrl);
+        
+        map.current.addSource('power-plants-source', {
+          type: 'vector',
+          url: powerPlantsTilesetUrl
+        });
+        console.log("Added power plants vector source");
+
+        // Add food banks infrastructure layer
+        const foodBanksTilesetUrl = `mapbox://${INFRASTRUCTURE_LAYERS.food_banks.tilesetId}`;
+        console.log("Adding food banks tileset with URL:", foodBanksTilesetUrl);
+        
+        map.current.addSource('food-banks-source', {
+          type: 'vector',
+          url: foodBanksTilesetUrl
+        });
+        console.log("Added food banks vector source");
+
+        // Add farmers markets infrastructure layer
+        const farmersMarketsTilesetUrl = `mapbox://${INFRASTRUCTURE_LAYERS.farmers_markets.tilesetId}`;
+        console.log("Adding farmers markets tileset with URL:", farmersMarketsTilesetUrl);
+        
+        map.current.addSource('farmers-markets-source', {
+          type: 'vector',
+          url: farmersMarketsTilesetUrl
+        });
+        console.log("Added farmers markets vector source");
+
         // Add sustainable aviation fuel plants layer with correct source layer
         try {
           // First, add the layer without filtering to ensure it loads
@@ -1754,6 +1915,121 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           console.error("Failed to add District Energy Systems layer:", error);
         }
         
+        // Add food processors layer
+        try {
+          map.current.addLayer({
+            id: 'food-processors-layer',
+            type: 'circle',
+            source: 'food-processors-source',
+            'source-layer': 'food_manufactureres_and_processors_epa',
+            paint: {
+              'circle-color': '#FFD700', // Gold color for food processors
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.foodProcessors ? 'visible' : 'none'
+            }
+          });
+          console.log("Added food processors layer with correct source layer 'food_manufactureres_and_processors_epa'");
+        } catch (error) {
+          console.error("Failed to add food processors layer:", error);
+        }
+        
+        // Add food retailers layer
+        try {
+          map.current.addLayer({
+            id: 'food-retailers-layer',
+            type: 'circle',
+            source: 'food-retailers-source',
+            'source-layer': 'food_wholesalers_and_retailers_epa',
+            paint: {
+              'circle-color': '#FF69B4', // HotPink for food retailers
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': layerVisibility?.foodRetailers ? 'visible' : 'none'
+            }
+          });
+          console.log("Added food retailers layer with correct source layer 'food_wholesalers_and_retailers_epa'");
+        } catch (error) {
+          console.error("Failed to add food retailers layer:", error);
+        }
+
+        // Add power plants layer
+        try {
+          map.current.addLayer({
+            id: 'power-plants-layer',
+            type: 'circle',
+            source: 'power-plants-source',
+            'source-layer': INFRASTRUCTURE_LAYERS.power_plants.sourceLayer,
+            paint: {
+              'circle-color': '#FFD700', // Gold
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': 'none'
+            }
+          });
+          console.log(`Added power plants layer with correct source layer '${INFRASTRUCTURE_LAYERS.power_plants.sourceLayer}'`);
+        } catch (error) {
+          console.error("Failed to add power plants layer:", error);
+        }
+
+        // Add food banks layer
+        try {
+          map.current.addLayer({
+            id: 'food-banks-layer',
+            type: 'circle',
+            source: 'food-banks-source',
+            'source-layer': INFRASTRUCTURE_LAYERS.food_banks.sourceLayer,
+            paint: {
+              'circle-color': '#32CD32', // LimeGreen
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': 'none'
+            }
+          });
+          console.log(`Added food banks layer with correct source layer '${INFRASTRUCTURE_LAYERS.food_banks.sourceLayer}'`);
+        } catch (error) {
+          console.error("Failed to add food banks layer:", error);
+        }
+
+        // Add farmers markets layer
+        try {
+          map.current.addLayer({
+            id: 'farmers-markets-layer',
+            type: 'circle',
+            source: 'farmers-markets-source',
+            'source-layer': INFRASTRUCTURE_LAYERS.farmers_markets.sourceLayer,
+            paint: {
+              'circle-color': '#FF4500', // OrangeRed
+              'circle-radius': 6,
+              'circle-opacity': 0.8,
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 1
+            },
+            layout: {
+              'visibility': 'none'
+            }
+          });
+          console.log(`Added farmers markets layer with correct source layer '${INFRASTRUCTURE_LAYERS.farmers_markets.sourceLayer}'`);
+        } catch (error) {
+          console.error("Failed to add farmers markets layer:", error);
+        }
+        
         // Add petroleum pipelines layer (as part of transportation)
         try {
           map.current.addLayer({
@@ -2111,509 +2387,39 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
           }
         });
 
-                  // --- Add Click Listener for Biorefineries Layer (Display Properties) ---
-          map.current.on('click', 'biorefineries-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
+        // --- Add Interactivity to Layers ---
+        const interactiveLayers = {
+          'rail-lines-layer': 'Rail Line Details',
+          'freight-terminals-layer': 'Freight Terminal Details',
+          'freight-routes-layer': 'Freight Route Details',
+          'petroleum-pipelines-layer': 'Petroleum Pipeline Details',
+          'crude-oil-pipelines-layer': 'Crude Oil Pipeline Details',
+          'natural-gas-pipelines-layer': 'Natural Gas Pipeline Details',
+          'anaerobic-digester-layer': 'Anaerobic Digester Details',
+          'biodiesel-plants-layer': 'Biodiesel Plant Details',
+          'biorefineries-layer': 'Biorefinery Details',
+          'cement-plants-layer': 'Cement Plant Details',
+          'mrf-layer': 'Material Recovery Facility Details',
+          'saf-plants-layer': 'Sustainable Aviation Fuel Plant Details',
+          'renewable-diesel-layer': 'Renewable Diesel Plant Details',
+          'landfill-lfg-layer': 'Landfill LFG Project Details',
+          'landfill-lfg-layer': 'Landfill LFG Project Details',
+          'wastewater-treatment-layer': 'Wastewater Treatment Plant Details',
+          'waste-to-energy-layer': 'Waste to Energy Plant Details',
+          'combustion-plants-layer': 'Combustion Plant Details',
+          'district-energy-systems-layer': 'District Energy System Details',
+          'food-processors-layer': 'Food Processor Details',
+          'food-retailers-layer': 'Food Retailer Details',
+          'power-plants-layer': 'Power Plant Details',
+          'food-banks-layer': 'Food Bank Details',
+          'farmers-markets-layer': 'Farmers Market Details',
+        };
 
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Biorefinery Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for biorefinery:', properties);
-            }
-          });
-          
-          // --- Add Click Listener for SAF Plants Layer (Display Properties) ---
-          map.current.on('click', 'saf-plants-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
-
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Sustainable Aviation Fuel Plant Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for SAF plant:', properties);
-            }
-          });
-          
-          // --- Add Click Listener for Renewable Diesel Plants Layer (Display Properties) ---
-          map.current.on('click', 'renewable-diesel-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
-
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Renewable Diesel Plant Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for Renewable Diesel plant:', properties);
-            }
-          });
-          
-          // --- Add Click Listener for Cement Plants Layer (Display Properties) ---
-          map.current.on('click', 'cement-plants-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
-
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Cement Plant Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for Cement Plant:', properties);
-            }
-          });
-          
-          // --- Add Click Listener for Combustion Plants Layer (Display Properties) ---
-          map.current.on('click', 'combustion-plants-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
-
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Combustion Plant Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for Combustion Plant:', properties);
-            }
-          });
-          
-          // --- Add Click Listener for Material Recovery Facilities Layer (Display Properties) ---
-          map.current.on('click', 'mrf-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
-
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Material Recovery Facility Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for Material Recovery Facility:', properties);
-            }
-          });
-
-          // --- Add Click Listener for District Energy Systems Layer (Display Properties) ---
-          map.current.on('click', 'district-energy-systems-layer', (e) => {
-            // Don't show popup when in siting mode (either in placement or review state)
-            if (sitingModeRef.current) {
-              // Stop event propagation to prevent popup
-              e.originalEvent.stopPropagation();
-              return;
-            }
-            
-            // Ensure features exist and prevent popups for clicks not directly on a feature
-            if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
-              const coordinates = e.lngLat;
-              const properties = feature.properties;
-
-              // --- Format Properties for Display ---
-
-              // Helper function to convert snake_case to Title Case
-              const toTitleCase = (str) => {
-                return str.replace(/_/g, ' ').replace(
-                  /\w\S*/g,
-                  (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              };
-
-              let contentLines = '';
-              // Iterate through all properties
-              for (const key in properties) {
-                if (properties.hasOwnProperty(key) && properties[key] !== null && properties[key] !== undefined && properties[key] !== '****') {
-                  const label = toTitleCase(key);
-                  let value = properties[key];
-
-                  // Format as "Label: Value" on a single line, left-justified
-                  contentLines += `<div style="margin-bottom: 3px; text-align: left;"><strong style="font-weight: bold;">${label}:</strong> ${value}</div>`;
-                }
-              }
-
-              // Increase right padding for close button spacing, remove table
-              const popupHTML = `
-                <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                  <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">District Energy System Details</h4>
-                  ${contentLines}
-                </div>
-              `;
-
-              // --- Create and Show Popup ---
-              // Close any existing popup first
-              if (currentPopup.current) {
-                currentPopup.current.remove();
-              }
-              
-              // Create new popup and store reference
-              currentPopup.current = new mapboxgl.Popup({ 
-                  closeButton: true, 
-                  closeOnClick: true, 
-                  maxWidth: '350px',
-                  className: 'facility-popup'
-                })
-                .setLngLat(coordinates)
-                .setHTML(popupHTML)
-                .addTo(map.current);
-
-              // Add event listener to clear popup reference when it's closed
-              currentPopup.current.on('close', () => {
-                currentPopup.current = null;
-                console.log('Popup closed manually');
-              });
-
-              console.log('Displayed formatted popup for District Energy System:', properties);
-            }
-          });
+        for (const [layerId, popupTitle] of Object.entries(interactiveLayers)) {
+          if (map.current.getLayer(layerId)) {
+            addLayerInteractivity(layerId, popupTitle);
+          }
+        }
 
       }); // Closing bracket for map.current.on('load', ...)
 
@@ -2740,7 +2546,7 @@ useEffect(() => {
 
 }, [mapLoaded, croplandOpacity]); // Depend on mapLoaded and croplandOpacity
 
-// Effect for controlling infrastructure and transportation layer visibility
+  // Effect for controlling infrastructure and transportation layer visibility
 useEffect(() => {
   if (!mapLoaded || !map.current) return;
 
@@ -2763,6 +2569,11 @@ useEffect(() => {
     'waste-to-energy-layer': layerVisibility?.wasteToEnergy,
     'combustion-plants-layer': layerVisibility?.combustionPlants,
     'district-energy-systems-layer': layerVisibility?.districtEnergySystems,
+    'food-processors-layer': layerVisibility?.foodProcessors,
+    'food-retailers-layer': layerVisibility?.foodRetailers,
+    'power-plants-layer': layerVisibility?.powerPlants,
+    'food-banks-layer': layerVisibility?.foodBanks,
+    'farmers-markets-layer': layerVisibility?.farmersMarkets,
   };
 
   Object.entries(layerMapping).forEach(([layerId, isVisible]) => {
@@ -2771,9 +2582,16 @@ useEffect(() => {
       if (map.current.getLayoutProperty(layerId, 'visibility') !== visibility) {
         map.current.setLayoutProperty(layerId, 'visibility', visibility);
       }
+
+      // If the layer is being hidden and a popup for it is open, close the popup
+      if (!isVisible && currentPopup.current && currentPopupLayer === layerId.replace(/-layer$/, '')) {
+        currentPopup.current.remove();
+        currentPopup.current = null;
+        setCurrentPopupLayer(null);
+      }
     }
   });
-}, [mapLoaded, layerVisibility]);
+}, [mapLoaded, layerVisibility, currentPopupLayer]);
 
   // Define validateBufferState function before it's used in dependency arrays
   const validateBufferState = useCallback(() => {

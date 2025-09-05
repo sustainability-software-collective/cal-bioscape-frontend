@@ -191,3 +191,18 @@ export const getCropResidueFactors = (cropName: string) => {
   
   return null;
 };
+
+export const INFRASTRUCTURE_LAYERS = {
+  "power_plants": {
+    tilesetId: "tylerhuntington222.c7dnms77",
+    sourceLayer: "power_plants",
+  },
+  "food_banks": {
+    tilesetId: "tylerhuntington222.dlijw1br",
+    sourceLayer: "food_banks_epa",
+  },
+  "farmers_markets": {
+    tilesetId: "tylerhuntington222.c12trp3g",
+    sourceLayer: "farmers_markets_usda",
+  },
+};

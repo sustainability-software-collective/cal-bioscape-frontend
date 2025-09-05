@@ -23,7 +23,8 @@ import {
   ORCHARD_VINEYARD_RESIDUES, 
   ROW_CROP_RESIDUES, 
   FIELD_CROP_RESIDUES, 
-  CROP_NAME_MAPPING 
+  CROP_NAME_MAPPING,
+  INFRASTRUCTURE_LAYERS
 } from '@/lib/constants';
 
 // Define a minimal type for the mapbox map instance to avoid using 'any'
@@ -47,6 +48,7 @@ interface LayerControlsProps {
   transportationMaster: boolean;
   onShowAllLayers: () => void;
   onHideAllLayers: () => void;
+  onClosePopupForLayer: (layerId: string) => void; // Add this line
 }
 
 const LayerControls: React.FC<LayerControlsProps> = ({
@@ -61,6 +63,7 @@ const LayerControls: React.FC<LayerControlsProps> = ({
   transportationMaster,
   onShowAllLayers,
   onHideAllLayers,
+  onClosePopupForLayer,
 }) => {
   // Local state to track layer visibility within the component
   // This helps keep UI in sync with actual map layer visibility
@@ -399,6 +402,11 @@ const LayerControls: React.FC<LayerControlsProps> = ({
         mapInstance.setLayoutProperty(mapboxLayerId, 'visibility', isVisible ? 'visible' : 'none');
         console.log(`Set ${mapboxLayerId} visibility to ${isVisible ? 'visible' : 'none'} directly`);
         
+        // If the layer is being hidden, close any associated popup
+        if (!isVisible) {
+          onClosePopupForLayer(layerId);
+        }
+
         // Update parent state if requested (to keep the overall app state in sync)
         if (updateParentState) {
           onLayerToggle(layerId, isVisible);
@@ -435,7 +443,12 @@ const LayerControls: React.FC<LayerControlsProps> = ({
     wastewaterTreatment: 'wastewater-treatment-layer',
     wasteToEnergy: 'waste-to-energy-layer',
     combustionPlants: 'combustion-plants-layer',
-    districtEnergySystems: 'district-energy-systems-layer'
+    districtEnergySystems: 'district-energy-systems-layer',
+    foodProcessors: 'food-processors-layer',
+    foodRetailers: 'food-retailers-layer',
+    powerPlants: 'power-plants-layer',
+    foodBanks: 'food-banks-layer',
+    farmersMarkets: 'farmers-markets-layer'
   };
 
   // Show all layers with proper state management
@@ -607,7 +620,8 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                         const infrastructureLayers = [
                           'anaerobicDigester', 'biodieselPlants', 'biorefineries', 'safPlants',
                           'renewableDiesel', 'mrf', 'cementPlants', 'landfillLfg',
-                          'wastewaterTreatment', 'wasteToEnergy', 'combustionPlants', 'districtEnergySystems'
+                          'wastewaterTreatment', 'wasteToEnergy', 'combustionPlants', 'districtEnergySystems', 'foodProcessors', 'foodRetailers',
+                          'powerPlants', 'foodBanks', 'farmersMarkets'
                         ];
 
                         // Update parent state for master checkbox
@@ -907,6 +921,118 @@ const LayerControls: React.FC<LayerControlsProps> = ({
                           }}
                         ></span>
                         District Energy Systems
+                      </Label>
+                    </div>
+                    
+                    {/* Food Processors Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="foodProcessorsLayer"
+                        checked={localLayerVisibility?.foodProcessors ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('foodProcessors', !!checked)}
+                      />
+                      <Label htmlFor="foodProcessorsLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#FFD700', /* Gold color for Food Processors */
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Food Processors
+                      </Label>
+                    </div>
+                    
+                    {/* Food Retailers Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                       <Checkbox
+                        id="foodRetailersLayer"
+                        checked={localLayerVisibility?.foodRetailers ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('foodRetailers', !!checked)}
+                      />
+                      <Label htmlFor="foodRetailersLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#FF69B4', /* HotPink for Food Retailers */
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Food Retailers
+                      </Label>
+                    </div>
+                    {/* Power Plants Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                      <Checkbox
+                        id="powerPlantsLayer"
+                        checked={localLayerVisibility?.powerPlants ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('powerPlants', !!checked)}
+                      />
+                      <Label htmlFor="powerPlantsLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#FFD700', // Gold
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Power Plants
+                      </Label>
+                    </div>
+                    {/* Food Banks Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                      <Checkbox
+                        id="foodBanksLayer"
+                        checked={localLayerVisibility?.foodBanks ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('foodBanks', !!checked)}
+                      />
+                      <Label htmlFor="foodBanksLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#32CD32', // LimeGreen
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Food Banks
+                      </Label>
+                    </div>
+                    {/* Farmers' Markets Layer Toggle - Under Infrastructure */}
+                    <div className="flex items-center space-x-2 pl-6 mt-2">
+                      <Checkbox
+                        id="farmersMarketsLayer"
+                        checked={localLayerVisibility?.farmersMarkets ?? false}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => directLayerToggle('farmersMarkets', !!checked)}
+                      />
+                      <Label htmlFor="farmersMarketsLayer" className="flex items-center text-xs">
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#FF4500', // OrangeRed
+                            borderRadius: '50%',
+                            marginRight: '2px',
+                            flexShrink: 0,
+                          }}
+                        ></span>
+                        Farmers' Markets
                       </Label>
                     </div>
                   </>
