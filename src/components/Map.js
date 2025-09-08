@@ -716,8 +716,11 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
       `;
       document.head.appendChild(shadowStyle);
       
-      // Force an initial mousemove event to position the marker
-      map.current.fire('mousemove', { lngLat: map.current.getCenter() });
+      // Position the marker at the center of the map initially
+      const initialLngLat = map.current.getCenter();
+      if (initialLngLat) {
+        hoverMarker.setLngLat(initialLngLat);
+      }
       
       return () => {
         // Only clean up the hover marker and cursor, don't touch the placed marker or buffer
@@ -2354,7 +2357,7 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
             // Increase right padding for close button spacing, remove table
             const popupHTML = `
               <div style="padding: 5px 15px 5px 5px; font-size: 0.9em;">
-                <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Crop Residues Details</h4>
+                <h4 style="font-size: 1.1em; font-weight: bold; margin: 0 0 8px 0; padding: 0; text-align: left;">Crop Field Details</h4>
                 ${contentLines}
                 ${residueSection}
               </div>
@@ -2385,6 +2388,17 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
 
             console.log('Displayed formatted popup for feature:', properties);
           }
+        });
+
+        // --- Add Hover Effect for Feedstock Layer ---
+        map.current.on('mouseenter', 'feedstock-vector-layer', () => {
+          if (!sitingModeRef.current) {
+            map.current.getCanvas().style.cursor = 'pointer';
+          }
+        });
+
+        map.current.on('mouseleave', 'feedstock-vector-layer', () => {
+          map.current.getCanvas().style.cursor = '';
         });
 
         // --- Add Interactivity to Layers ---
