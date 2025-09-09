@@ -962,6 +962,9 @@ const Map = ({ layerVisibility, visibleCrops, croplandOpacity }) => { // Added v
         preserveDrawingBuffer: true, // Prevent refresh on state changes
         renderWorldCopies: true // Improve performance
       });
+
+      // Add zoom and rotation controls to the map.
+      map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
       
       // Expose map instance globally for direct access by other components
       window.mapboxMap = map.current;
