@@ -6,7 +6,7 @@ steps:
       - '-c'
       - |
         echo -n "$${MAPBOX_ACCESS_TOKEN}" > /workspace/_token
-        docker build -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA \
+        docker build --no-cache -t gcr.io/$PROJECT_ID/biocirv-frontend:$SHORT_SHA \
           --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$(cat /workspace/_token)" .
         rm -f /workspace/_token
     secretEnv: ['MAPBOX_ACCESS_TOKEN']
