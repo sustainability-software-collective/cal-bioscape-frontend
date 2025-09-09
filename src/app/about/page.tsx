@@ -96,11 +96,29 @@ export default function AboutPage() {
                 
                 <div className="mt-10 mb-8">
                   <h4 className="text-lg font-medium text-center text-gray-700 mb-6">Supported by</h4>
-                  <div className="flex flex-wrap justify-between items-center w-full">
+                  <div className="flex flex-wrap justify-center items-center w-full gap-8">
                     <div className="flex flex-col items-center">
                       <Image 
                         src="/berkeley lab_logo_white_bg.png" 
                         alt="Berkeley Lab" 
+                        width={180} 
+                        height={60}
+                        className="h-auto"
+                      />
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <Image 
+                        src="/uc_berkeley_logo.png" 
+                        alt="UC Berkeley" 
+                        width={180} 
+                        height={60}
+                        className="h-auto"
+                      />
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <Image 
+                        src="/biocirv_official_logo.png" 
+                        alt="Biocirv" 
                         width={180} 
                         height={60}
                         className="h-auto"
