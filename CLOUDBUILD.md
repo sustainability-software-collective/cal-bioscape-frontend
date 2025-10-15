@@ -18,7 +18,7 @@ We maintain **separate Cloud Build files per environment** for:
 |------|-------------|-------------|---------|
 | `cloudbuild.yaml` | `cal-bioscape-frontend-dev` | development | Development/default builds |
 | `cloudbuild-staging.yaml` | `cal-bioscape-frontend-staging` | staging | Staging environment |
-| `cloudbuild-prod.yaml` | `cal-bioscape-frontend` | production | Production environment |
+| `cloudbuild-prod.yaml` | `cal-bioscape-frontend-prod` | production | Production environment |
 
 ## Substitution Variables
 
@@ -83,7 +83,7 @@ Configuration: cloudbuild-prod.yaml
 
 Optional substitutions override:
 ```yaml
-_SERVICE_NAME: cal-bioscape-frontend
+_SERVICE_NAME: cal-bioscape-frontend-prod
 _ENVIRONMENT: production
 _REGION: us-west1
 ```
@@ -101,7 +101,7 @@ gcloud builds submit \
 ```bash
 gcloud builds submit \
   --config=cloudbuild-prod.yaml \
-  --substitutions=_SERVICE_NAME=cal-bioscape-frontend,_ENVIRONMENT=production,_REGION=us-west1
+  --substitutions=_SERVICE_NAME=cal-bioscape-frontend-prod,_ENVIRONMENT=production,_REGION=us-west1
 ```
 
 ## Environment Variables
@@ -190,20 +190,20 @@ Modify the `gcloud run deploy` args section:
 
 ### Find Previous Version
 ```bash
-gcloud container images list-tags gcr.io/$PROJECT_ID/cal-bioscape-frontend
+gcloud container images list-tags gcr.io/$PROJECT_ID/cal-bioscape-frontend-prod
 ```
 
 ### Rollback to Specific Version
 ```bash
-gcloud run deploy cal-bioscape-frontend \
-  --image=gcr.io/$PROJECT_ID/cal-bioscape-frontend:abc123f \
+gcloud run deploy cal-bioscape-frontend-prod \
+  --image=gcr.io/$PROJECT_ID/cal-bioscape-frontend-prod:abc123f \
   --region=us-west1 \
   --platform=managed
 ```
 
 ### Rollback via Cloud Run Console
 1. Go to Cloud Run console
-2. Select the service (e.g., `cal-bioscape-frontend`)
+2. Select the service (e.g., `cal-bioscape-frontend-prod`)
 3. Click "Manage Traffic"
 4. Choose a previous revision
 5. Migrate traffic to that revision

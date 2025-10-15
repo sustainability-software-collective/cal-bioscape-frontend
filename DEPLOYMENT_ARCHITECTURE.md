@@ -29,7 +29,7 @@ This document describes the deployment architecture using Cloud Build and Cloud 
 │  │                 │  │                 │  │                │  │
 │  │ _SERVICE_NAME=  │  │ _SERVICE_NAME=  │  │ _SERVICE_NAME= │  │
 │  │ cal-bioscape-   │  │ cal-bioscape-   │  │ cal-bioscape-  │  │
-│  │ frontend        │  │ frontend-       │  │ frontend-dev   │  │
+│  │ frontend-prod   │  │ frontend-       │  │ frontend-dev   │  │
 │  │                 │  │ staging         │  │                │  │
 │  │ _ENVIRONMENT=   │  │ _ENVIRONMENT=   │  │ _ENVIRONMENT=  │  │
 │  │ production      │  │ staging         │  │ development    │  │
@@ -40,10 +40,10 @@ This document describes the deployment architecture using Cloud Build and Cloud 
 ┌─────────────────────────────────────────────────────────────────┐
 │                  Container Registry (GCR)                        │
 │                                                                   │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  gcr.io/$PROJECT_ID/cal-bioscape-frontend:$SHORT_SHA        │   │
-│  │  gcr.io/$PROJECT_ID/cal-bioscape-frontend:production-latest │   │
-│  └──────────────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  gcr.io/$PROJECT_ID/cal-bioscape-frontend-prod:$SHORT_SHA       │   │
+│  │  gcr.io/$PROJECT_ID/cal-bioscape-frontend-prod:production-latest│   │
+│  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                       │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │  gcr.io/$PROJECT_ID/cal-bioscape-frontend-staging:$SHORT_SHA    │   │
@@ -65,14 +65,14 @@ This document describes the deployment architecture using Cloud Build and Cloud 
 │  │  Production     │  │    Staging      │  │  Development   │  │
 │  │                 │  │                 │  │                │  │
 │  │ cal-bioscape-   │  │ cal-bioscape-   │  │ cal-bioscape-  │  │
-│  │ frontend        │  │ frontend-       │  │ frontend-dev   │  │
+│  │ frontend-prod   │  │ frontend-       │  │ frontend-dev   │  │
 │  │                 │  │ staging         │  │                │  │
 │  │ ENV: production │  │ ENV: staging    │  │ ENV: dev       │  │
 │  │                 │  │                 │  │                │  │
 │  │ URL:            │  │ URL:            │  │ URL:           │  │
 │  │ cal-bioscape-   │  │ cal-bioscape-   │  │ cal-bioscape-  │  │
-│  │ frontend-xxx.a. │  │ frontend-       │  │ frontend-dev-  │  │
-│  │ run.app         │  │ staging-xxx.a.  │  │ xxx.a.run.app  │  │
+│  │ frontend-prod-  │  │ frontend-       │  │ frontend-dev-  │  │
+│  │ xxx.a.run.app   │  │ staging-xxx.a.  │  │ xxx.a.run.app  │  │
 │  │                 │  │ run.app         │  │                │  │
 │  │                 │  │                 │  │                │  │
 │  │ ✅ min-inst: 1  │  │ ⚡ min-inst: 0  │  │ ⚡ min-inst: 0 │  │
@@ -87,9 +87,9 @@ This document describes the deployment architecture using Cloud Build and Cloud 
 ```
 Commit: abc123f
 │
-├─► gcr.io/$PROJECT_ID/cal-bioscape-frontend:abc123f ◄─── Immutable, precise rollback
+├─► gcr.io/$PROJECT_ID/cal-bioscape-frontend-prod:abc123f ◄─── Immutable, precise rollback
 │
-└─► gcr.io/$PROJECT_ID/cal-bioscape-frontend:production-latest ◄─── Mutable, latest prod
+└─► gcr.io/$PROJECT_ID/cal-bioscape-frontend-prod:production-latest ◄─── Mutable, latest prod
 ```
 
 **Why two tags?**
@@ -134,8 +134,8 @@ Commit: abc123f
 ```yaml
 # Defined in cloudbuild-{env}.yaml
 substitutions:
-  _SERVICE_NAME: 'cal-bioscape-frontend-staging'
-  _ENVIRONMENT: 'staging'
+  _SERVICE_NAME: 'cal-bioscape-frontend-prod'
+  _ENVIRONMENT: 'production'
   _REGION: 'us-west1'
 
 # Can be overridden in Cloud Build trigger:
@@ -170,7 +170,7 @@ gcloud run deploy ${_SERVICE_NAME} --region=${_REGION}
                └─► Auto-deploy to cal-bioscape-frontend-staging
                    └─► QA Testing
                        └─► Merge to 'main'
-                           └─► Auto-deploy to cal-bioscape-frontend
+                           └─► Auto-deploy to cal-bioscape-frontend-prod
                                └─► Production ✅
 ```
 
@@ -183,7 +183,7 @@ Production Issue Detected
 │   └─► Manage Traffic → Previous Revision
 │
 ├─► Option 2: gcloud CLI
-│   └─► gcloud run deploy cal-bioscape-frontend --image=gcr.io/.../cal-bioscape-frontend:abc123f
+│   └─► gcloud run deploy cal-bioscape-frontend-prod --image=gcr.io/.../cal-bioscape-frontend-prod:abc123f
 │
 └─► Option 3: Redeploy from Git
     └─► git revert → push to main → auto-deploy

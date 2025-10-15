@@ -1,6 +1,6 @@
 # Substitution variables for environment-specific configuration
 substitutions:
-  _SERVICE_NAME: 'cal-bioscape-frontend'
+  _SERVICE_NAME: 'cal-bioscape-frontend-prod'
   _ENVIRONMENT: 'production'
   _REGION: 'us-west1'
 
