@@ -1,6 +1,6 @@
-# BioCirV Siting Tool Frontend (Cal BioScape)
+# Cal BioScape Frontend
 
-This is the frontend for the BioCirV Siting Tool, a web-based application for analyzing and visualizing biomass and circular economy resource data. It is built with [Next.js](https://nextjs.org).
+This is the frontend for the Cal BioScape Siting Tool, a web-based application for analyzing and visualizing biomass and circular economy resource data. It is built with [Next.js](https://nextjs.org).
 
 ## Staging Site
 
