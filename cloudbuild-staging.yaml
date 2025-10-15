@@ -1,0 +1,45 @@
+steps:
+  # Build with access token
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo -n "$${MAPBOX_ACCESS_TOKEN}" > /workspace/_token
+        docker build --no-cache -t gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA \
+          --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$(cat /workspace/_token)" .
+        rm -f /workspace/_token
+    secretEnv: ['MAPBOX_ACCESS_TOKEN']
+
+  # Push to registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cal-bioscape-staging'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA'
+      - '--region'
+      - 'us-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA'
+
+# Required for custom service account
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/mapbox-access-token/versions/latest
+      env: 'MAPBOX_ACCESS_TOKEN'
