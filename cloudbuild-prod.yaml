@@ -1,8 +1,7 @@
 # Substitution variables for environment-specific configuration
-# This is the base/dev configuration
 substitutions:
-  _SERVICE_NAME: 'cal-bioscape-frontend-dev'
-  _ENVIRONMENT: 'development'
+  _SERVICE_NAME: 'cal-bioscape-frontend'
+  _ENVIRONMENT: 'production'
   _REGION: 'us-west1'
 
 steps:

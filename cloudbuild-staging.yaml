@@ -1,3 +1,9 @@
+# Substitution variables for environment-specific configuration
+substitutions:
+  _SERVICE_NAME: 'cal-bioscape-frontend-staging'
+  _ENVIRONMENT: 'staging'
+  _REGION: 'us-west1'
+
 steps:
   # Build with access token
   - name: 'gcr.io/cloud-builders/docker'
@@ -6,16 +12,23 @@ steps:
       - '-c'
       - |
         echo -n "$${MAPBOX_ACCESS_TOKEN}" > /workspace/_token
-        docker build --no-cache -t gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA \
-          --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$(cat /workspace/_token)" .
+        docker build --no-cache -t gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA \
+          -t gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${_ENVIRONMENT}-latest \
+          --build-arg MAPBOX_ACCESS_TOKEN_BUILD="$(cat /workspace/_token)" \
+          --build-arg ENVIRONMENT=${_ENVIRONMENT} .
         rm -f /workspace/_token
     secretEnv: ['MAPBOX_ACCESS_TOKEN']
 
-  # Push to registry
+  # Push to registry with multiple tags
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${_ENVIRONMENT}-latest'
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -23,17 +36,20 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'cal-bioscape-staging'
+      - '${_SERVICE_NAME}'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
       - '--region'
-      - 'us-west1'
+      - '${_REGION}'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=${_ENVIRONMENT}'
 
 images:
-  - 'gcr.io/$PROJECT_ID/cal-bioscape-staging:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${_ENVIRONMENT}-latest'
 
 # Required for custom service account
 options:
