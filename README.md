@@ -29,7 +29,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## About The Project
 
-The Cal BioScape Siting Tool provides an interactive map interface to help users identify suitable locations for bioenergy and bioproducts facilities. It allows for the visualization of various data layers, analysis of siting constraints, and inventory assessment.
+The Cal BioScape Siting Tool provides an interactive map interface to help users identify suitable locations for bioenergy and biomanufacturing facilities. It allows for the visualization of various data layers, analysis of siting constraints, and inventory assessment.
 
 ## Built With
 
