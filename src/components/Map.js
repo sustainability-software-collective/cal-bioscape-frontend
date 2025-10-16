@@ -7,7 +7,7 @@ import * as turf from '@turf/turf'; // Import TurfJS
 import SitingButton from './SitingButton';
 import SitingAnalysis from './SitingAnalysis';
 import SitingInventory from './SitingInventory'; // Import the new component
-import { FEEDSTOCK_TILESET_ID, INFRASTRUCTURE_LAYERS } from '@/lib/constants';
+import { INFRASTRUCTURE_LAYERS } from '@/lib/constants';
 import { TILESET_REGISTRY } from '@/lib/tileset-registry'; // Import centralized tileset registry
 import { layerLabelMappings } from '@/lib/labelMappings';
 
