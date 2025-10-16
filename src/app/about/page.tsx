@@ -36,7 +36,7 @@ export default function AboutPage() {
                   >
                     BioCircular Valley initiative
                   </Link>{" "}
-                  represents a strategic effort to cultivate a thriving circular
+                  is a strategic effort to cultivate a thriving circular
                   bioeconomy within California&apos;s Northern San Joaquin
                   Valley (NSJV), specifically encompassing San Joaquin,
                   Stanislaus, and Merced counties. Our core vision is to
