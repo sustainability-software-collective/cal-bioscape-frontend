@@ -20,6 +20,7 @@ This directory contains technical documentation, specifications, and reference g
 ### Deployment and Infrastructure
 - **DEPLOYMENT_ARCHITECTURE.md** - Project deployment architecture documentation
 - **CLOUDBUILD.md** - Cloud Build configuration and setup documentation
+- **.cloudbuild-summary.md** - Cloud Build quick reference summary
 
 ## Organization
 
